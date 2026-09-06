@@ -42,10 +42,12 @@ jobs:
 
       - name: Build APK
         run: eas build --platform android --profile preview --non-interactive
+        env:
+         EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Download APK
         run: eas build:download --platform android --latest --output linea-blanca-pro.apk
-        
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
