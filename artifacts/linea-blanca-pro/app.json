@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Línea Blanca Pro",
+    "slug": "linea-blanca-pro",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "linea-blanca-pro",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#145DA0"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.lineablancapro.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Se requiere acceso a la cámara para tomar fotos de evidencia durante el diagnóstico técnico.",
+        "NSPhotoLibraryUsageDescription": "Se requiere acceso a la galería para adjuntar fotos de evidencia al diagnóstico.",
+        "NSPhotoLibraryAddUsageDescription": "Se requiere acceso para guardar fotos de evidencia del diagnóstico."
+      }
+    },
+    "android": {
+      "package": "com.lineablancapro.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Se requiere acceso a la galería para adjuntar fotos de evidencia al diagnóstico.",
+          "cameraPermission": "Se requiere acceso a la cámara para tomar fotos de evidencia durante el diagnóstico técnico."
+        }
+      ],
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

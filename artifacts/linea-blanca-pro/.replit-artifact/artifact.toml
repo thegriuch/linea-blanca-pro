@@ -1,0 +1,23 @@
+kind = "mobile"
+previewPath = "/"
+title = "Línea Blanca Pro"
+version = "1.0.0"
+id = "artifacts/linea-blanca-pro"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 19630
+
+[services.development]
+run = "pnpm --filter @workspace/linea-blanca-pro run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/linea-blanca-pro", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/linea-blanca-pro", "run", "serve" ]
+
+[services.env]
+PORT = "19630"
+BASE_PATH = "/"
