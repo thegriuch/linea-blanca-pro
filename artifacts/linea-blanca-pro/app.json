@@ -29,7 +29,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -56,6 +57,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5e24d4a3-e4dd-4512-89ce-f7589d2448c7"
+      }
+    },
+    "owner": "thegriuch1"
   }
 }
