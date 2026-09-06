@@ -1,4 +1,3 @@
-import { Asset } from 'expo-asset';
 import {
   AlignmentType,
   Document,
@@ -14,6 +13,7 @@ import {
 import { Platform } from 'react-native';
 import type { DiagnosticSession, Evidence } from '@/types/diagnostico';
 import { getEquipoInfo } from '@/constants/equipos';
+import { LETTERHEAD_ICON_DATA_URI } from '@/utils/letterheadIcon';
 
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -138,14 +138,10 @@ async function readImageAsDataUri(uri: string): Promise<ReportImage> {
 }
 
 async function readLetterheadIcon(): Promise<ReportImage> {
-  const asset = Asset.fromModule(require('@/assets/images/icon.png'));
-  await asset.downloadAsync();
-  const uri = asset.localUri ?? asset.uri;
-  if (!uri) {
-    throw new Error('No se pudo cargar el icono del membrete.');
-  }
-  const image = await readImageAsDataUri(uri);
-  return { ...image, type: 'png' };
+  return {
+    data: LETTERHEAD_ICON_DATA_URI,
+    type: 'png',
+  };
 }
 
 function heading(text: string, level: 'title' | 'section' | 'evidence' = 'section') {
