@@ -394,8 +394,8 @@ export async function shareReport(session: DiagnosticSession): Promise<void> {
     await FileSystem.writeAsStringAsync(fileUri, base64, {
       encoding: FileSystem.EncodingType.Base64,
     });
-    if (await Sharing.default.isAvailableAsync()) {
-      await Sharing.default.shareAsync(fileUri, {
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri, {
         mimeType: DOCX_MIME,
         dialogTitle: 'Compartir reporte DOCX',
       });
