@@ -57,6 +57,12 @@ export function buildReportText(session: DiagnosticSession): string {
     `Modelo: ${session.equipo.modelo || '—'}`,
     `Serie: ${session.equipo.serie || '—'}`,
     `Falla reportada: ${session.equipo.fallaLabel || '—'}`,
+    ...(session.errorCode
+      ? [
+          `Código de error registrado: ${session.errorCode.codigo}`,
+          `Descripción del código: ${session.errorCode.descripcion}`,
+        ]
+      : []),
     '',
   ];
 
@@ -256,6 +262,12 @@ async function buildDocx(session: DiagnosticSession): Promise<Document> {
     field('Modelo', session.equipo.modelo),
     field('Número de serie', session.equipo.serie),
     field('Falla reportada', session.equipo.fallaLabel),
+    ...(session.errorCode
+      ? [
+          field('Código de error registrado', session.errorCode.codigo),
+          field('Descripción del código', session.errorCode.descripcion),
+        ]
+      : []),
   ];
 
   if (causes.length > 0) {

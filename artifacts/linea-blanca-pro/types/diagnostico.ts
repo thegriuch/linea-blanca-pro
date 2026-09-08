@@ -61,6 +61,7 @@ export interface FaultItem {
 
 export interface Evidence {
   id: string;
+  diagnosticId: string;
   uri: string;
   nodeId?: string;
   nodeText?: string;
@@ -91,6 +92,12 @@ export interface ConclusionInfo {
   observaciones: string;
 }
 
+export interface DiagnosticErrorCode {
+  codigo: string;
+  descripcion: string;
+  equivalentes?: string;
+}
+
 export interface DiagnosticSession {
   id: string;
   startedAt: string;
@@ -104,6 +111,7 @@ export interface DiagnosticSession {
   currentNodeId: string;
   completed: boolean;
   conclusion: ConclusionInfo;
+  errorCode?: DiagnosticErrorCode;
   result?: {
     causes: DiagnosticCause[];
     recommendation: string;

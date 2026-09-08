@@ -65,7 +65,14 @@ const VOLTAJE_NODE: TreeNode = {
 export default function ArbolScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { currentSession, advanceNode, goBackNode, addEvidence, setResult } = useDiagnostico();
+  const {
+    currentSession,
+    advanceNode,
+    goBackNode,
+    addEvidence,
+    setErrorCode,
+    setResult,
+  } = useDiagnostico();
 
   // ── Etapas del flujo ────────────────────────────────────────────────────
   // ETAPA 0 — Voltaje
@@ -174,17 +181,14 @@ export default function ArbolScreen() {
   };
 
   // Usar código de error como resultado final
-  const usarCodigoComoDiagnostico = () => {
+  const iniciarArbolConCodigo = () => {
     if (!codigoSel) return;
-    setResult({
-      causes:         codigoSel.causas.map((c, i) => ({
-        cause:       c,
-        probability: Math.max(10, 70 - i * 15),
-      })),
-      recommendation: codigoSel.solucion,
-      parts:          codigoSel.partes ?? [],
+    setErrorCode({
+      codigo: codigoSel.codigo,
+      descripcion: codigoSel.descripcion,
+      equivalentes: codigoSel.equivalentes,
     });
-    router.push('/diagnostico/conclusion');
+    setErrorListo(true);
   };
 
   // ── Botón Volver ──────────────────────────────────────────────────────────
@@ -199,7 +203,14 @@ export default function ArbolScreen() {
       setVoltajeListo(false); return;
     }
     // Etapa 2: árbol
-    if (path.length === 0) { setErrorListo(false); setTieneError(null); setCodigoSel(null); setBusqueda(''); return; }
+      if (path.length === 0) {
+        setErrorListo(false);
+        setTieneError(null);
+        setCodigoSel(null);
+        setErrorCode(undefined);
+        setBusqueda('');
+        return;
+      }
     goBackNode();
     setEvidenceUri(null);
   };
@@ -346,7 +357,7 @@ export default function ArbolScreen() {
     }
 
     // 1B — Lista de códigos + búsqueda
-    if (tieneError && !codigoSel) {
+    if (tieneError && !codigoSel && !errorListo) {
       return (
         <ScrollView
           style={{ flex: 1, backgroundColor: c.background }}
@@ -434,7 +445,7 @@ export default function ArbolScreen() {
     }
 
     // 1C — Detalle del código seleccionado
-    if (codigoSel) {
+    if (codigoSel && !errorListo) {
       return (
         <ScrollView
           style={{ flex: 1, backgroundColor: c.background }}
@@ -502,16 +513,16 @@ export default function ArbolScreen() {
 
           <View style={{ height: 20 }} />
           <PrimaryButton
-            label="Este código identifica el problema → Registrar diagnóstico"
+            label="Usar código como pista y seguir árbol"
             icon="check-circle"
-            onPress={usarCodigoComoDiagnostico}
+            onPress={iniciarArbolConCodigo}
           />
           <View style={{ height: 10 }} />
           <PrimaryButton
             label="Continuar con árbol de diagnóstico guiado"
             variant="secondary"
             icon="git-branch"
-            onPress={() => { setErrorListo(true); }}
+            onPress={iniciarArbolConCodigo}
           />
           <View style={{ height: 10 }} />
           <PrimaryButton label="Volver" variant="outline" onPress={handleBack} />
@@ -534,6 +545,15 @@ export default function ArbolScreen() {
       <Text style={[styles.progressLabel, { color: c.mutedForeground }]}>
         Paso {path.length + 1} · árbol diagnóstico
       </Text>
+
+      {codigoSel && (
+        <View style={[styles.codigoPista, { backgroundColor: '#F5821F12', borderColor: '#F5821F', borderRadius: colors.radius }]}>
+          <Feather name="alert-triangle" size={15} color="#F5821F" />
+          <Text style={[styles.codigoPistaText, { color: c.foreground }]}>
+            Código {codigoSel.codigo} registrado como pista. Confírmalo con las validaciones del árbol.
+          </Text>
+        </View>
+      )}
 
       <View style={[styles.typeBadge, { backgroundColor: nodeColor + '18', borderRadius: 8 }]}>
         <Feather name={NODE_TYPE_ICON[node.type]} size={14} color={nodeColor} />
@@ -1001,6 +1021,20 @@ const styles = StyleSheet.create({
   codigoHeader: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 14,
     padding: 16, borderWidth: 2,
+  },
+  codigoPista: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  codigoPistaText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
   codigoBadgeLg: { paddingHorizontal: 12, paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
   codigoBadgeLgText: {

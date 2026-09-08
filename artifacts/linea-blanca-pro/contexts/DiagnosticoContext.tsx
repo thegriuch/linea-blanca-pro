@@ -4,6 +4,7 @@ import type {
   ClienteInfo,
   ConclusionInfo,
   DiagnosticCause,
+  DiagnosticErrorCode,
   DiagnosticSession,
   EquipoInfo,
   Evidence,
@@ -32,6 +33,7 @@ interface DiagnosticoContextType {
   addEvidence: (evidence: Omit<Evidence, 'id' | 'createdAt' | 'diagnosticId'>) => void;
   removeEvidence: (evidenceId: string) => void;
   setConclusion: (data: Partial<ConclusionInfo>) => void;
+  setErrorCode: (errorCode?: DiagnosticErrorCode) => void;
   setResult: (result: { causes: DiagnosticCause[]; recommendation: string; parts: string[] }) => void;
   completeSession: () => DiagnosticSession | null;
   discardSession: () => void;
@@ -233,6 +235,10 @@ const setEquipo = useCallback((equipo: EquipoInfo) => {
     );
   }, []);
 
+  const setErrorCode = useCallback((errorCode?: DiagnosticErrorCode) => {
+    setCurrentSession((prev) => (prev ? { ...prev, errorCode } : prev));
+  }, []);
+
   const setResult = useCallback((result: { causes: DiagnosticCause[]; recommendation: string; parts: string[] }) => {
     setCurrentSession((prev) => prev ? { ...prev, result } : prev);
   }, []);
@@ -250,8 +256,16 @@ const setEquipo = useCallback((equipo: EquipoInfo) => {
       return updated;
     });
     // Encolar para sincronizar en la nube (modo offline-first)
-    enqueueSync(completed).then(() => setPendingSync(1));
-    setCurrentSession(null);
+    void enqueueSync(completed)
+      .then(() => setPendingSync(1))
+      .catch(() => {
+        // El reporte ya quedó guardado localmente; una falla de la cola
+        // offline no debe cerrar la aplicación ni impedir ver el resumen.
+      });
+    // Conservar temporalmente la sesión completada evita que la pantalla de
+    // conclusión redireccione mientras Expo Router procesa el reemplazo.
+    // Al iniciar otro diagnóstico, startSession la reemplaza por una nueva.
+    setCurrentSession(completed);
     return completed;
   }, [currentSession, persistSessions]);
 
@@ -314,6 +328,7 @@ const setEquipo = useCallback((equipo: EquipoInfo) => {
         addEvidence,
         removeEvidence,
         setConclusion,
+        setErrorCode,
         setResult,
         completeSession,
         discardSession,

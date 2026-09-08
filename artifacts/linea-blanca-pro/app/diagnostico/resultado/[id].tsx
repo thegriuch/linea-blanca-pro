@@ -100,6 +100,12 @@ export default function ResultadoScreen() {
           <InfoRow label="Modelo" value={session.equipo.modelo || '—'} c={c} />
           <InfoRow label="Serie" value={session.equipo.serie || '—'} c={c} />
           <InfoRow label="Falla reportada" value={session.equipo.fallaLabel || '—'} c={c} />
+          {session.errorCode && (
+            <>
+              <InfoRow label="Código registrado" value={session.errorCode.codigo} c={c} />
+              <InfoRow label="Descripción del código" value={session.errorCode.descripcion} c={c} />
+            </>
+          )}
         </View>
 
         {/* Probabilistic diagnosis */}

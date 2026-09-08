@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,8 +17,13 @@ export default function ConclusionScreen() {
   const { currentSession, setConclusion, completeSession } = useDiagnostico();
   const [isFinishing, setIsFinishing] = useState(false);
 
+  useEffect(() => {
+    if (!currentSession) {
+      router.replace('/diagnostico/nuevo');
+    }
+  }, [currentSession]);
+
   if (!currentSession) {
-    router.replace('/diagnostico/nuevo');
     return null;
   }
 
@@ -31,6 +36,9 @@ export default function ConclusionScreen() {
       if (completed) {
         router.replace(`/diagnostico/resultado/${completed.id}` as any);
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido.';
+      Alert.alert('No se pudo guardar el reporte', message);
     } finally {
       setIsFinishing(false);
     }
