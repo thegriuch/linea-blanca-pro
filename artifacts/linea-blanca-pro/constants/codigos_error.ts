@@ -16,6 +16,118 @@ export interface CodigoError {
 // ── LAVADORAS ─────────────────────────────────────────────────────────────────
 const LAVADORA: CodigoError[] = [
   {
+    codigo: 'E1',
+    equivalentes: 'E10',
+    descripcion: 'No llena agua: el nivel no cambia en 3 min con las electroválvulas abiertas',
+    causas: [
+      'Presión de agua del suministro demasiado baja (< 0,5 bar)',
+      'Filtros de la manguera de entrada obstruidos',
+      'Electroválvula de entrada defectuosa (hay voltaje pero no abre)',
+      'Sensor de nivel (presostato) o manguera del presostato obstruida',
+      'Tarjeta PCB no envía señal de apertura a la electroválvula',
+    ],
+    solucion: 'Verificar presión del suministro de agua (abrir llave completamente). Limpiar los filtros de los puertos de entrada de la electroválvula. Si hay voltaje en la electroválvula y no abre → reemplazar electroválvula. Si no hay voltaje → soplar manguera del presostato, verificar sensor de nivel. Si persiste → revisar PCB y cableado entre PCB y sensor.',
+    partes: ['Electroválvula de entrada de agua', 'Presostato / sensor de nivel', 'Tarjeta PCB principal'],
+  },
+  {
+    codigo: 'E2',
+    equivalentes: 'E21',
+    descripcion: 'No desagua: el nivel no baja en 3 min con la bomba activa',
+    causas: [
+      'Manguera de desagüe doblada, aplastada o instalada demasiado alta',
+      'Bomba de drenaje obstruida (moneda, botón, pelusa)',
+      'Bomba de drenaje defectuosa o quemada',
+      'Tarjeta PCB no activa la bomba de drenaje',
+    ],
+    solucion: 'Verificar que la manguera de desagüe no esté doblada ni sifoneada. Limpiar el filtro de la bomba de drenaje (panel frontal inferior en la mayoría de modelos). Medir si llega voltaje a la bomba durante el ciclo de drenaje — si llega y no drena → reemplazar bomba. Si no llega voltaje → revisar PCB.',
+    partes: ['Bomba de drenaje', 'Tarjeta PCB principal'],
+  },  
+  {
+    codigo: 'E4',
+    equivalentes: 'E40',
+    descripcion: 'Carga desbalanceada — el tambor no puede centrifugar de forma segura',
+    causas: [
+      'Ropa concentrada en un solo lado del tambor',
+      'Pieza de ropa grande (colchón, cobija) que no puede distribuirse',
+      'Lavadora sin nivelar correctamente',
+      'Amortiguadores de suspensión desgastados',
+      'Resortes de suspensión flojos o rotos',
+    ],
+    solucion: 'Abrir la puerta, redistribuir la ropa manualmente y reiniciar el ciclo. Si persiste con carga normal → verificar nivelación con nivel de burbuja y ajustar las patas. Si vibra excesivamente → revisar amortiguadores y resortes de suspensión.',
+    partes: ['Amortiguadores de suspensión', 'Resortes de suspensión', 'Switch de impacto'],
+  },
+  {
+    codigo: 'E3',
+    equivalentes: 'E30 (door lock)',
+    descripcion: 'Error de puerta/tapa — el equipo no detecta que la puerta está cerrada',
+    causas: [
+      'Desbalance del producto',
+      'Puerta o tapa no cerrada completamente',
+      'Interruptor de seguridad de puerta (door switch) defectuoso',
+      'Traba electrónica de puerta (door lock) averiada',
+      'Lengüeta de puerta rota o deformada',
+    ],
+    solucion: 'Verificar que la puerta cierra completamente con clic. Medir continuidad del interruptor de puerta (debe cambiar estado al cerrar). Verificar que el solenoide de la traba electrónica recibe voltaje y traba. Revisar la lengua plástica de la puerta. Verificar nivelacion del tambor, no de la lavadora.',
+    partes: ['Interruptor de puerta / door switch', 'Traba electrónica / door lock'],
+  },
+  {
+    codigo: 'E7',
+    equivalentes: 'No tiene',
+    descripcion: 'Error de Frenado de giro',
+    causas: [
+      'Retractor dañado',
+      'Freno o clutch dañado',
+      'PCB Con defecto en el envio de señales',
+    ],
+    solucion: 'Verficar el rettractor, Verificar conexiones estables. Verificar continuidad del freno o clutch. Si persiste el error, reemplazar PCB.',
+    partes: ['Freno o Clutch', 'Retractor', 'PCB'],
+  },
+  {
+    codigo: 'F8',
+    equivalentes: 'E33',
+    descripcion: 'Error de sensor de presión de agua / sensor de nivel',
+    causas: [
+      'Manguera del presostato obstruida o pinchada',
+      'Presostato (sensor de nivel) defectuoso',
+      'Residuos de jabón endurecido en la cámara del presostato',
+      'Deficiencia en embobinado del motor',
+    ],
+    solucion: 'Desconectar y soplar la manguera del presostato desde ambos extremos. Limpiar la cámara del presostato. Verificar que el presostato cambia de estado (clic) al soplar. Si no cambia → reemplazar presostato.',
+    partes: ['Presostato / sensor de nivel'],
+  },
+  {
+    codigo: 'FD',
+    equivalentes: 'No tiene',
+    descripcion: 'Falla por bloqueo en voltaje en cerradura electronica',
+    causas: [
+      'Cerradura electronica dañada',
+      'Cables rotos o sin continuidad',
+      'Terminales de la cerradura dañados o sulfatados',
+      'Daño mecanico en la cerradura',
+      'Daño en PCB',
+    ],
+    solucion: 'Verificar si el espétillo esta defectuoso o si hay una interferencia. Verificar continuidad de los cables. Verificar que la cerradura recibe voltaje y funciona correctamente. Si persiste el error, reemplazar la cerradura y/o PCB.',
+    partes: ['Door lock', 'PCB'],
+  },
+   {
+    codigo: 'C8',
+    equivalentes: 'E61, E62, E64',
+    descripcion: 'Falla entre tarjeta inverter y tarjeta PCB',
+    causas: [
+      'Falla de contactos desde PCB',
+      'Falla por daños en PCB',
+      'Tarjeta inverter no reconoce las señales',
+      'MCableado sin continuidad',
+    ],
+    solucion: 'Reconectar la tarjeta PCB a la tarjeta inverter, revisar las conexiones y el cableado (continuidad de los cables). Verificar que en los conectores no hayan sulfataciones. Verificar que estén llegando los 120V +/- 10% a la tarjeta motor. Si persiste el error, reemplazar la tarjeta PCB y/o Tarjeta inverter.',
+    partes: ['PCB', 'Tarjeta inverter'],
+  },
+];
+
+// ── SECADORAS ─────────────────────────────────────────────────────────────────
+// Códigos específicos de secadoras (secado, calefacción, flujo de aire y motor).
+const SECADORA: CodigoError[] = [
+  {
     codigo: 'E10',
     equivalentes: 'E1',
     descripcion: 'No llena agua: el nivel no cambia en 3 min con las electroválvulas abiertas',
@@ -31,7 +143,7 @@ const LAVADORA: CodigoError[] = [
   },
   {
     codigo: 'E12',
-    equivalentes: 'E2,',
+    equivalentes: 'E22,',
     descripcion: 'Nivel de agua en el tambor supera el límite de alarma (sobrellenado)',
     causas: [
       'Electroválvula de entrada de agua no cierra (queda abierta)',
@@ -67,19 +179,20 @@ const LAVADORA: CodigoError[] = [
       'Resortes de suspensión flojos o rotos',
     ],
     solucion: 'Abrir la puerta, redistribuir la ropa manualmente y reiniciar el ciclo. Si persiste con carga normal → verificar nivelación con nivel de burbuja y ajustar las patas. Si vibra excesivamente → revisar amortiguadores y resortes de suspensión.',
-    partes: ['Amortiguadores de suspensión', 'Resortes de suspensión'],
+    partes: ['Amortiguadores de suspensión', 'Resortes de suspensión', 'Switch de impacto'],
   },
-  {
+   {
     codigo: 'E30',
     equivalentes: 'E3 (door lock)',
     descripcion: 'Error de puerta/tapa — el equipo no detecta que la puerta está cerrada',
     causas: [
+      'Desbalance del producto',
       'Puerta o tapa no cerrada completamente',
       'Interruptor de seguridad de puerta (door switch) defectuoso',
       'Traba electrónica de puerta (door lock) averiada',
       'Lengüeta de puerta rota o deformada',
     ],
-    solucion: 'Verificar que la puerta cierra completamente con clic. Medir continuidad del interruptor de puerta (debe cambiar estado al cerrar). Verificar que el solenoide de la traba electrónica recibe voltaje y traba. Revisar la lengua plástica de la puerta.',
+    solucion: 'Verificar que la puerta cierra completamente con clic. Medir continuidad del interruptor de puerta (debe cambiar estado al cerrar). Verificar que el solenoide de la traba electrónica recibe voltaje y traba. Revisar la lengua plástica de la puerta. Verificar nivelacion del tambor, no de la lavadora.',
     partes: ['Interruptor de puerta / door switch', 'Traba electrónica / door lock'],
   },
   {
@@ -148,32 +261,6 @@ const LAVADORA: CodigoError[] = [
     partes: ['Presostato / sensor de nivel'],
   },
   {
-    codigo: 'CE',
-    equivalentes: '9E, E8 (corriente), overcurrent',
-    descripcion: 'Protección por sobrecorriente — el motor o tarjeta detecta corriente excesiva',
-    causas: [
-      'Carga excesiva de ropa en el tambor',
-      'Tambor bloqueado por objeto extraño (moneda, ropa atascada)',
-      'Motor con devanados en corto',
-      'Módulo de control del motor (BLDC driver) defectuoso',
-    ],
-    solucion: 'Reducir la carga de ropa y reiniciar. Revisar que nada bloquee el movimiento del tambor (girar a mano). Si el motor emite olor a quemado → revisar devanados. Si el problema persiste → revisar tarjeta de control del motor.',
-    partes: ['Motor de lavado', 'Tarjeta de control BLDC'],
-  },
-  {
-    codigo: 'E21',
-    equivalentes: '11E, E9 (leak), FL (fuga)',
-    descripcion: 'Fuga de agua detectada — sensor de bandeja anti-derrame activo',
-    causas: [
-      'Manguera de entrada o salida con fuga',
-      'Sello de la bomba de drenaje deteriorado',
-      'Tambor o tina con fisura',
-      'Sello de goma (bota) de puerta (en frontales) deteriorado',
-    ],
-    solucion: 'Inspeccionar todas las mangueras (entrada, desagüe, interna). Revisar sello de la bomba de drenaje. En frontales, revisar el sello de goma (bota) de la puerta por fisuras. Vaciar la bandeja inferior si está llena de agua.',
-    partes: ['Manguera de entrada', 'Manguera de desagüe', 'Sello de bomba', 'Sello de goma de puerta'],
-  },
-  {
     codigo: 'E50',
     equivalentes: 'No tiene',
     descripcion: 'La tarjeta inverter que está en el motor detecta señales anormales',
@@ -200,143 +287,50 @@ const LAVADORA: CodigoError[] = [
     solucion: 'Verificar que estén llegando los 120V +/- 10% a la tarjeta inverter del motor. Verificar los embobinados del motor.',
     partes: ['Motor de lavado'],
   },
-];
-
-// ── SECADORAS ─────────────────────────────────────────────────────────────────
-// Códigos específicos de secadoras (secado, calefacción, flujo de aire y motor).
-const SECADORA: CodigoError[] = [
-  {
-    codigo: 'dE1',
-    equivalentes: 'E1, dE',
-    descripcion: 'No calienta: el elemento calefactor no recibe energía o está abierto',
+   {
+    codigo: 'E60',
+    equivalentes: 'E61, E62, E64',
+    descripcion: 'El motor no esta girando, despues de intentar arrancar varias veces, la tarjeta inverter del motor detecta que el motor no gira',
     causas: [
-      'Elemento calefactor (resistencia) abierto',
-      'Termostato de seguridad (hi-limit) activado permanentemente por sobrecalentamiento',
-      'Relé de la tarjeta que controla el calefactor defectuoso',
-      'Filtro de pelusa o ducto de salida obstruidos',
+      'Falla de contactos desde PCB',
+      'Falla por daños en PCB',
+      'Tarjeta inverter del motor no reconoce las señales',
+      'Motor dañado',
     ],
-    solucion: 'Desconectar el equipo. Medir continuidad del elemento calefactor (típico 8–20 Ω). Verificar termostato de seguridad (debe tener continuidad). Limpiar filtro de pelusa y ducto ANTES de reemplazar componentes. Verificar que llegue voltaje al elemento cuando la secadora debería calentar.',
-    partes: ['Elemento calefactor / resistencia', 'Termostato de seguridad (hi-limit)', 'Tarjeta de control'],
+    solucion: 'Reconectar la tarjeta PCB al motor, revisar las conexiones y el cableado (continuidad de los cables). Verificar que en los conectores no hayan sulfataciones. Verificar que estén llegando los 120V +/- 10% al motor. Si persiste el error, reemplazar la tarjeta PCB y/o el motor.',
+    partes: ['Motor de lavado'],
   },
-  {
-    codigo: 'dE2',
-    equivalentes: 'E2, tE (temp)',
-    descripcion: 'El tambor no gira — correa del tambor rota o motor defectuoso',
+   {
+    codigo: 'E80',
+    equivalentes: 'No tiene',
+    descripcion: 'No se detecta comunicacion entre tarjeta PCB y tarjeta display',
     causas: [
-      'Correa de transmisión del tambor rota o desgastada',
-      'Motor del tambor defectuoso',
-      'Tensor de correa (idler pulley) fuera de posición',
-      'Rodamiento del tambor agarrotado',
+      'Conectores sulfatados o conectores sin contacto',
+      'Cableado dañado, sin continuidad',
+      'Tarjeta PCB y/o tarjeta display dañadas',
     ],
-    solucion: 'Abrir el panel frontal/trasero según el modelo. Inspeccionar visualmente la correa (belt). Verificar el tensor. Medir continuidad del motor. Comprobar que el tambor gire libremente a mano.',
-    partes: ['Correa del tambor (belt)', 'Motor de secadora', 'Tensor de correa (idler pulley)', 'Rodamiento del tambor'],
-  },
-  {
-    codigo: 'dE3',
-    equivalentes: 'E3, F3',
-    descripcion: 'Falla del sensor de temperatura de la secadora (NTC)',
-    causas: [
-      'Sensor NTC de temperatura fuera de rango (corto o abierto)',
-      'Conector del sensor suelto o con corrosión',
-      'Tarjeta de control con falla en la lectura del sensor',
-    ],
-    solucion: 'Medir la resistencia del sensor NTC (a temperatura ambiente típicamente 5–50 kΩ y debe variar con el calor). Verificar conectores y continuidad hasta la tarjeta. Reemplazar el sensor si está fuera de especificación.',
-    partes: ['Sensor NTC de temperatura', 'Tarjeta de control'],
-  },
-  {
-    codigo: 'dE4',
-    equivalentes: 'E4, F4',
-    descripcion: 'Flujo de aire deficiente o conducto de ventilación obstruido',
-    causas: [
-      'Acumulación de pelusa en el ducto de salida de aire',
-      'Filtro de pelusa interno obstruido',
-      'Ventilador (blower wheel) con pelusa o flojo en el eje',
-      'Ducto aplastado o con codos excesivos que restringen el flujo',
-    ],
-    solucion: 'Limpiar el ducto de ventilación completo con cepillo flexible. Limpiar el blower wheel. Verificar que la aspa esté fija al eje. Comprobar flujo de aire en la salida exterior (debe sentirse fuerte). Un ducto limpio puede reducir el tiempo de secado hasta un 50%.',
-    partes: ['Blower wheel / ventilador de circulación', 'Motor del ventilador'],
-  },
-  {
-    codigo: 'dE5',
-    equivalentes: 'E5, UE, de (desequilibrio)',
-    descripcion: 'Error de desequilibrio o carga mal distribuida en el tambor',
-    causas: [
-      'Carga de ropa desbalanceada o atascada en un lado',
-      'Secadora sin nivelar o sobre superficie inestable',
-      'Amortiguadores de suspensión desgastados',
-      'Resortes de suspensión flojos o rotos',
-    ],
-    solucion: 'Redistribuir la ropa uniformemente y reiniciar. Verificar nivelación con nivel de burbuja (ajustar patas). Si persiste con carga normal → revisar amortiguadores y resortes de suspensión.',
-    partes: ['Amortiguadores de suspensión', 'Resortes de suspensión'],
-  },
-  {
-    codigo: 'dE6',
-    equivalentes: 'E6, dE (door)',
-    descripcion: 'Error de puerta — el equipo no detecta que la puerta está cerrada',
-    causas: [
-      'Puerta no cerrada completamente',
-      'Interruptor de seguridad de puerta (door switch) defectuoso',
-      'Traba electrónica de puerta averiada',
-      'Lengüeta de puerta rota o deformada',
-    ],
-    solucion: 'Verificar que la puerta cierre completamente con clic. Medir continuidad del interruptor de puerta (debe cambiar de estado al cerrar). Revisar la traba electrónica y la lengüeta de la puerta.',
-    partes: ['Interruptor de puerta / door switch', 'Traba electrónica / door lock'],
-  },
-  {
-    codigo: 'dE7',
-    equivalentes: 'E7, CE (comm)',
-    descripcion: 'Error de comunicación entre tarjeta principal y tarjeta de display',
-    causas: [
-      'Cable de comunicación (ribbon) suelto o dañado',
-      'Tarjeta de display defectuosa',
-      'Tarjeta principal con falla en el módulo de comunicación',
-    ],
-    solucion: 'Verificar y reconectar el cable plano. Hacer reset completo (desconectar 10 minutos). Si persiste → probar reemplazando la tarjeta de display primero.',
-    partes: ['Cable de comunicación / ribbon cable', 'Tarjeta de display', 'Tarjeta principal'],
-  },
-  {
-    codigo: 'dE8',
-    equivalentes: 'E8, bE (belt)',
-    descripcion: 'Falla en el sensor de rotación de la correa (belt switch)',
-    causas: [
-      'Sensor de rotación de correa defectuoso',
-      'Correa rota que el sensor no detecta',
-      'Suciedad o pelusa que bloquea el sensor',
-    ],
-    solucion: 'Verificar el sensor de rotación de la correa. Limpiarlo de pelusa. Verificar que la correa esté en buen estado y haga girar la polea del sensor. Reemplazar correa o sensor según diagnóstico.',
-    partes: ['Sensor de rotación de correa', 'Correa del tambor (belt)'],
-  },
-  {
-    codigo: 'dE9',
-    equivalentes: 'E9, tE (temp)',
-    descripcion: 'Error de termostato de ciclo o sobrecalentamiento',
-    causas: [
-      'Termostato de ciclo (cycling thermostat) abierto permanentemente',
-      'Termostato de seguridad activado por sobrecalentamiento',
-      'Filtro de pelusa o ducto obstruidos que causan sobrecalentamiento',
-    ],
-    solucion: 'Limpiar el filtro y el ducto ANTES de reemplazar componentes. Medir continuidad del termostato de ciclo y del de seguridad. Reemplazar con la referencia exacta del modelo.',
-    partes: ['Termostato de ciclo (cycling thermostat)', 'Termostato de seguridad (hi-limit)'],
+    solucion: 'Verificar conexiones y continuidad de los cables. Revisar que no haya sulfataciones en los conectores. Verificar entradas y salidas de las tarjetas PCB y Display. Si persiste el error, reemplazar la tarjeta PCB y/o tarjeta display.',
+    partes: ['Tarjeta Display y/o PCB'],
   },
 ];
 
 // ── NEVERAS / REFRIGERADORES ──────────────────────────────────────────────────
 const NEVERA: CodigoError[] = [
   {
-    codigo: 'E1',
-    equivalentes: 'F1, 1F, Er F1, Er 1',
+    codigo: '1 Flash',
+    equivalentes: 'F1, 1F, Er F1, E1',
     descripcion: 'Error de sensor de temperatura del compartimento de refrigeración',
     causas: [
       'Sensor NTC del compartimento de refrigeración en circuito abierto o corto',
       'Conector del sensor suelto o con corrosión',
       'Tarjeta principal con falla en la lectura del sensor',
     ],
-    solucion: 'Desconectar y medir el sensor NTC (a 25°C ≈ 5–10 kΩ según modelo). Verificar continuidad del cableado hasta la tarjeta. Limpiar conectores. Si el valor del sensor está fuera de rango → reemplazar sensor.',
+    solucion: 'Desconectar y medir el sensor NTC (Ver tabla de valores del sensor NTC). Verificar continuidad del cableado hasta la tarjeta. Limpiar conectores. Si el valor del sensor está fuera de rango → reemplazar sensor.',
     partes: ['Sensor NTC de refrigerador', 'Tarjeta principal'],
   },
   {
-    codigo: 'E2',
-    equivalentes: 'F2, 2F, Er F2, Er 2',
+    codigo: '2 Flash',
+    equivalentes: 'F2, 2F, Er F2, E2',
     descripcion: 'Error de sensor de temperatura del congelador (freezer)',
     causas: [
       'Sensor NTC del congelador en circuito abierto o corto',
@@ -347,8 +341,8 @@ const NEVERA: CodigoError[] = [
     partes: ['Sensor NTC de congelador', 'Resistencia de deshielo', 'Termostato de deshielo'],
   },
   {
-    codigo: 'E3',
-    equivalentes: 'F3, 3F, Er 3, amb. sensor',
+    codigo: '3 Flash',
+    equivalentes: 'F3, 3F, E3, amb. sensor',
     descripcion: 'Error de sensor ambiental / sensor de temperatura exterior',
     causas: [
       'Sensor NTC ambiental en circuito abierto o corto',
@@ -358,8 +352,8 @@ const NEVERA: CodigoError[] = [
     partes: ['Sensor NTC ambiental'],
   },
   {
-    codigo: 'E4',
-    equivalentes: 'F4, 4F, defrost sensor',
+    codigo: '4 Flash',
+    equivalentes: 'F4, 4F, defrost sensor, E4',
     descripcion: 'Error de sensor de descongelamiento',
     causas: [
       'Sensor de deshielo (defrost sensor) en corto o circuito abierto',
@@ -369,8 +363,8 @@ const NEVERA: CodigoError[] = [
     partes: ['Sensor de deshielo', 'Termostato de deshielo'],
   },
   {
-    codigo: 'E5',
-    equivalentes: 'F5, 5F, fan motor freezer',
+    codigo: '5 Flash',
+    equivalentes: 'F5, 5F, fan motor freezer, E5',
     descripcion: 'Error de motor del ventilador del congelador',
     causas: [
       'Motor del ventilador del evaporador bloqueado por hielo',
@@ -405,29 +399,7 @@ const NEVERA: CodigoError[] = [
     solucion: 'Verificar y reconectar el cable de comunicación (ribbon cable o cable plano). Hacer reset completo (desconectar 10 minutos). Si persiste → probar reemplazando tarjeta de display primero.',
     partes: ['Cable de comunicación', 'Tarjeta de display', 'Tarjeta principal'],
   },
-  {
-    codigo: 'H1',
-    equivalentes: 'HI, High Temp, alarm temp',
-    descripcion: 'Alarma de alta temperatura — el refrigerador detectó temperatura muy alta',
-    causas: [
-      'Puerta abierta por mucho tiempo o cargada de alimentos calientes',
-      'Falla de enfriamiento real (compresor, ventilador, refrigerante)',
-      'Sensor de temperatura defectuoso dando lectura errónea',
-    ],
-    solucion: 'Verificar si el equipo está enfriando normalmente (colocar termómetro). Si la temperatura interior es normal → sensor defectuoso. Si no enfría → iniciar diagnóstico de "No enfría" para identificar la falla de refrigeración.',
-    partes: [],
-  },
-  {
-    codigo: 'FF',
-    equivalentes: 'OF OF, o FF',
-    descripcion: 'Modo de descongelamiento forzado activado (no es falla — es modo de servicio)',
-    causas: [
-      'Activado manualmente por el técnico para descongelar',
-      'En algunos modelos puede indicar falla en ciclo normal de deshielo',
-    ],
-    solucion: 'Presionar los botones de modo servicio para salir del modo descongelamiento forzado (varía por modelo — consultar manual). Si el equipo entra solo a este modo → revisar ciclo de descongelamiento automático.',
-    partes: [],
-  },
+
 ];
 
 // ── AIRES ACONDICIONADOS ──────────────────────────────────────────────────────
@@ -531,78 +503,183 @@ const AIRE: CodigoError[] = [
     partes: ['Sensor NTC de evaporador'],
   },
 ];
-
-// ── CONGELADORES / NEVECONES ──────────────────────────────────────────────────
-// Usan los mismos códigos que neveras en su mayoría
-const CONGELADOR: CodigoError[] = NEVERA;
-const NEVECON: CodigoError[] = NEVERA;
-const MINIBAR: CodigoError[] = [
-  ...NEVERA.slice(0, 4),
-  {
-    codigo: 'E8',
-    equivalentes: 'Er 8',
-    descripcion: 'Error de tarjeta o falla general en minibar electrónico',
-    causas: ['Tarjeta de control defectuosa', 'Cortocircuito en carga'],
-    solucion: 'Desconectar 10 minutos y reiniciar. Si persiste → revisar tarjeta de control.',
-    partes: ['Tarjeta de control'],
+const CONGELADOR: CodigoError[] = [
+   {
+    codigo: '1 Flash',
+    equivalentes: 'F1, 1F, Er F1, E1',
+    descripcion: 'Proteccion contra sobrecorriente, Aterrizaje a tierra',
+    causas: [
+      'Corto en alguna bobina del compresor',
+      'Conectores suelto, aterrizados a tierra o con corrosión',
+      'Tarjeta principal con falla Aterrizada a tierra',
+    ],
+    solucion: 'Desconectar y medir resistencia 2 de las 3 salidas UVW tiene que haber mas de 1MΩ, si no, cambio de PCB. Medir bobinas de compresor de 15Ω - 20Ω, si no, cambio de compresor',
+    partes: ['Tarjeta inversora', 'Compresor'],
   },
-];
+  {
+    codigo: '2 Flash',
+    equivalentes: 'No tiene',
+    descripcion: 'Proteccion contra sobretensiones',
+    causas: [
+      'Medicion de entrada de voltaje mayor a 132V (Para productos  funcionales a 120V)o 242V (Para productos  funcionales a 220V)',
+      'Baja corriente, por novedades en las instalaciones electricas del sitio',
+    ],
+    solucion: 'Rechazo de garantia',
+    partes: ['Ninguno'],
+  },
+  {
+    codigo: '3 Flash',
+    equivalentes: 'No tiene',
+    descripcion: 'Proteccion contra subtensiones',
+    causas: [
+      'Medicion de entrada de voltaje menor a 109V (Para productos  funcionales a 120V) o 198V (Para productos  funcionales a 220V)',
+      'Baja corriente, por novedades en las instalaciones electricas del sitio',
+    ],
+    solucion: 'Localizar el sensor ambiental (generalmente en la parte superior del gabinete o en el panel de control). Medir resistencia a temperatura ambiente. Reemplazar si está fuera de especificación.',
+    partes: ['Sensor NTC ambiental'],
+  },
+  {
+
+      codigo: '4 Flash',
+    equivalentes: 'No tiene',
+    descripcion: 'Proteccion contra sobrecorriente al IPM, Aterrizaje a tierra',
+    causas: [
+      'Corto en alguna bobina del compresor',
+      'Conectores suelto, aterrizados a tierra o con corrosión',
+      'Tarjeta principal con falla Aterrizada a tierra',
+    ],
+    solucion: 'Desconectar y medir resistencia 2 de las 3 salidas UVW tiene que haber mas de 1MΩ, si no, cambio de PCB. Medir bobinas de compresor de 15Ω - 20Ω, si no, cambio de compresor',
+    partes: ['Tarjeta inversora', 'Compresor'],
+  },
+  {
+    codigo: '5 Flash',
+    equivalentes: 'No tiene',
+    descripcion: 'Estrangulamiento de temperatura, compresor muy caliente',
+    causas: [
+      'Lubricacion deficiente en el compresor',
+      'Si enfria pero deficientemente, es obstruccion',
+    ],
+    solucion: 'Validar obstrucciones en el sistema. Verificar ',
+    partes: ['Motor ventilador evaporador', 'Tarjeta principal'],
+  },
+  {
+   codigo: '6 Flash',
+   equivalentes: 'No tiene',
+   descripcion: 'Falta de protección de fase',
+   causas: [
+    'Arnés de cableado UVW desconectado o con mala conexión',
+    'Resistencia infinita entre fases del compresor',
+    'Obstrucción en el sistema de tuberías',
+    'Falla en la placa del inversor',
+  ],
+  solucion:
+    'Verificar la conexión del arnés UVW entre la placa inversora y el compresor. Medir la resistencia entre fases; si es infinita, reemplazar el compresor. Si persiste, reemplazar la placa del inversor.',
+  partes: ['Arnés UVW', 'Compresor', 'Placa del inversor'],
+},
+{
+  codigo: '7 Flash',
+  equivalentes: 'No tiene',
+  descripcion: 'Falla de polarización de voltaje',
+  causas: [
+    'Error temporal de alimentación o voltaje',
+    'Falla interna en la placa del inversor',
+  ],
+  solucion:
+    'Apagar y reiniciar el equipo. Si la falla continúa, reemplazar la placa del inversor.',
+  partes: ['Placa del inversor'],
+},
+{
+  codigo: '8 Flash',
+  equivalentes: 'No tiene',
+  descripcion: 'Protección contra pasos en falso',
+  causas: [
+    'Compresor dañado o sin respuesta',
+    'Falla de arranque detectada por la placa inversora',
+    'Falla en la placa del inversor',
+  ],
+  solucion:
+    'Verificar la respuesta del compresor. Si no responde y el indicador parpadea, reemplazar el compresor. Si vibra al arrancar y entra en protección, reemplazar la placa del inversor.',
+  partes: ['Compresor', 'Placa del inversor'],
+},
+{
+   codigo: '9 Flash',
+   equivalentes: 'No tiene',
+   descripcion: 'Protección contra bloqueos de carrera',
+   causas: [
+    'Compresor bloqueado o dañado',
+    'Compresor sin respuesta al arranque',
+    'Falla en la placa del inversor',
+  ],
+   solucion:
+    'Comprobar el funcionamiento del compresor. Si no responde y el indicador parpadea, reemplazar el compresor. Si vibra al iniciar y activa la protección, reemplazar la placa del inversor.',
+  partes: ['Compresor', 'Placa del inversor'],
+},
+{
+  codigo: '10 Flash',
+  equivalentes: 'No tiene',
+  descripcion:
+    'Protección contra sobretemperatura y sobrepotencia de la placa de frecuencia variable',
+  causas: [
+    'Lubricación insuficiente en el compresor',
+    'Obstrucción en el circuito de refrigeración',
+    'Compresor trabajando con temperatura elevada',
+  ],
+  solucion:
+    'Verificar la lubricación del compresor si el refrigerador aún enfría. Si no enfría, validar posibles obstrucciones en el circuito de refrigeración.',
+  partes: ['Compresor', 'Placa del inversor', 'Sistema de refrigeración'],
+},
+{
+  codigo: '11 Flash',
+  equivalentes: 'No tiene',
+  descripcion: 'Fallo de arranque',
+  causas: [
+    'Compresor dañado o sin respuesta',
+    'Bloqueo durante el arranque del compresor',
+    'Falla en la placa del inversor',
+  ],
+  solucion:
+    'Revisar la respuesta del compresor al encender. Si no responde y el indicador parpadea, reemplazar el compresor. Si vibra al arrancar y se protege, reemplazar la placa del inversor.',
+  partes: ['Compresor', 'Placa del inversor'],
+},
+{
+  codigo: '12 Flash',
+  equivalentes: 'No tiene',
+  descripcion: 'Reducción de potencia y frecuencia',
+  causas: [
+    'Lubricación insuficiente en el compresor',
+    'Obstrucción en el circuito de refrigeración',
+    'Alta carga de trabajo del compresor',
+  ],
+  solucion:
+    'Si el refrigerador enfría de forma deficiente, revisar la lubricación del compresor. Si no enfría, verificar obstrucciones en el circuito de refrigeración.',
+  partes: ['Compresor', 'Placa del inversor', 'Sistema de refrigeración'],
+},
+{
+  codigo: '13 Flash',
+  equivalentes: 'No tiene',
+  descripcion: 'Fallo de comunicación UART',
+  causas: [
+    'Cableado de comunicación desconectado o defectuoso',
+    'Falla en la placa de control principal',
+    'Falla en la placa del inversor',
+  ],
+  solucion:
+    'Comprobar el cableado de comunicación entre la placa de control principal y la placa del inversor. Si está correcto, reemplazar la placa principal o la placa del inversor.',
+  partes: [
+    'Cableado de comunicación',
+    'Tarjeta principal',
+    'Placa del inversor',
+  ],
+},
+]
+
+NEVERA;
+const DISPENSADORES: CodigoError[] = NEVERA;
+const NEVECON: CodigoError[] = NEVERA;
+const MINIBAR: CodigoError[] = NEVERA;
 
 // ── VITRINAS ──────────────────────────────────────────────────────────────────
-const VITRINA: CodigoError[] = [
-  {
-    codigo: 'E1',
-    equivalentes: 'F1, T1',
-    descripcion: 'Sensor de temperatura fuera de rango / lectura errática',
-    causas: [
-      'Sensor NTC suelto o en corto',
-      'Cableado con corrosión por humedad',
-      'Tarjeta de control con error en la lectura',
-    ],
-    solucion: 'Medir resistencia del sensor NTC a temperatura ambiente. Verificar conectores y continuidad hasta la tarjeta. Reemplazar sensor si está fuera de especificación; si persiste → revisar tarjeta.',
-    partes: ['Sensor NTC', 'Cableado / conector', 'Tarjeta de control'],
-  },
-  {
-    codigo: 'E2',
-    equivalentes: 'C1, CP',
-    descripcion: 'Unidad no enfría — compresor no arranca',
-    causas: [
-      'Falla en el relé de arranque o protector térmico',
-      'Fuga de refrigerante o circuito bloqueado',
-      'Problema en el motor del compresor',
-    ],
-    solucion: 'Verificar alimentación y continuidad del compresor. Medir protector/relé de arranque. Comprobar presiones del sistema y buscar fuga si la presión es baja. Reemplazar relé o compresor según diagnóstico.',
-    partes: ['Relé/Protector de arranque', 'Compresor', 'Refrigerante (recarga)'],
-  },
-];
-
-// ── DISPENSADORES ─────────────────────────────────────────────────────────────
-const DISPENSADORES: CodigoError[] = [
-  {
-    codigo: 'dE1',
-    equivalentes: 'DE1',
-    descripcion: 'No dispensa agua',
-    causas: [
-      'Válvula de entrada de agua obstruida o defectuosa',
-      'Filtro de línea taponado',
-      'Baja presión de suministro',
-    ],
-    solucion: 'Verificar presión de suministro y filtros de entrada. Medir si la válvula recibe voltaje al activar el dispensador. Reemplazar válvula si tiene voltaje y no abre.',
-    partes: ['Válvula de entrada', 'Filtro de línea', 'Kit de junta'],
-  },
-  {
-    codigo: 'dE2',
-    equivalentes: 'DE2',
-    descripcion: 'No dispensa hielo',
-    causas: [
-      'Motor/cubeta de hielo atascada',
-      'Sensor de nivel de hielo defectuoso',
-      'Actuador del dispensador dañado',
-    ],
-    solucion: 'Retirar cubeta y verificar movimiento libre del motor. Medir continuidad del motor y del actuador. Reemplazar componente defectuoso; verificar sensores de bloqueo.',
-    partes: ['Motor cubeta hielo', 'Actuador dispensador', 'Sensor de nivel'],
-  },
-];
+const VITRINA: CodigoError[] = CONGELADOR;
 
 // ── Tabla completa ────────────────────────────────────────────────────────────
 export const CODIGOS_POR_EQUIPO: Record<EquipoTipo, CodigoError[]> = {
@@ -620,4 +697,36 @@ export const CODIGOS_POR_EQUIPO: Record<EquipoTipo, CodigoError[]> = {
 
 export function getCodigosError(tipo: EquipoTipo): CodigoError[] {
   return CODIGOS_POR_EQUIPO[tipo] ?? [];
+}
+
+export interface CodigoErrorEncontrado extends CodigoError {
+  equipoTipo: EquipoTipo;
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+export function searchCodigosError(query: string): CodigoErrorEncontrado[] {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return [];
+
+  return (Object.entries(CODIGOS_POR_EQUIPO) as [EquipoTipo, CodigoError[]][])
+    .flatMap(([equipoTipo, codigos]) =>
+      codigos.map((codigo) => ({ ...codigo, equipoTipo })),
+    )
+    .filter((codigo) => {
+      const searchableText = normalizeSearchText([
+        codigo.codigo,
+        codigo.equivalentes ?? '',
+        codigo.descripcion,
+        ...codigo.causas,
+        codigo.solucion,
+      ].join(' '));
+      return searchableText.includes(normalizedQuery);
+    });
 }

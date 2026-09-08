@@ -29,7 +29,7 @@ interface DiagnosticoContextType {
   setEquipo: (equipo: EquipoInfo) => void;
   advanceNode: (nextNodeId: string, answerLabel?: string) => void;
   goBackNode: () => void;
-  addEvidence: (evidence: Omit<Evidence, 'id' | 'createdAt'>) => void;
+  addEvidence: (evidence: Omit<Evidence, 'id' | 'createdAt' | 'diagnosticId'>) => void;
   removeEvidence: (evidenceId: string) => void;
   setConclusion: (data: Partial<ConclusionInfo>) => void;
   setResult: (result: { causes: DiagnosticCause[]; recommendation: string; parts: string[] }) => void;
@@ -57,6 +57,16 @@ function emptyConclusion(): ConclusionInfo {
   return { diagnostico: '', repuestos: '', tiempoEstimado: '', observaciones: '' };
 }
 
+function normalizeSession(session: DiagnosticSession): DiagnosticSession {
+  return {
+    ...session,
+    evidence: (session.evidence ?? []).map((evidence) => ({
+      ...evidence,
+      diagnosticId: evidence.diagnosticId ?? session.id,
+    })),
+  };
+}
+
 export function DiagnosticoProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [currentSession, setCurrentSession] = useState<DiagnosticSession | null>(null);
@@ -76,13 +86,16 @@ export function DiagnosticoProvider({ children }: { children: React.ReactNode })
           AsyncStorage.getItem(CURRENT_SESSION_KEY),
           AsyncStorage.getItem(DRAFT_KEY),
         ]);
-        if (rawSessions) setSessions(JSON.parse(rawSessions));
+        if (rawSessions) {
+          const parsedSessions = JSON.parse(rawSessions) as DiagnosticSession[];
+          setSessions(parsedSessions.map(normalizeSession));
+        }
         if (rawTecnico) setTecnicoState(rawTecnico);
         if (rawCurrent) {
           const parsed = JSON.parse(rawCurrent) as DiagnosticSession;
-          if (!parsed.completed) setCurrentSession(parsed);
+          if (!parsed.completed) setCurrentSession(normalizeSession(parsed));
         }
-        if (rawDraft) setDraft(JSON.parse(rawDraft));
+        if (rawDraft) setDraft(normalizeSession(JSON.parse(rawDraft)));
         setPendingSync(await getPendingCount());
       } catch (_) {
         // ignore storage errors
@@ -144,7 +157,7 @@ export function DiagnosticoProvider({ children }: { children: React.ReactNode })
   }, [tecnico]);
 
   const restoreSession = useCallback((session: DiagnosticSession) => {
-    setCurrentSession(session);
+    setCurrentSession(normalizeSession(session));
   }, []);
 
   const updateCliente = useCallback((data: Partial<ClienteInfo>) => {
@@ -194,12 +207,13 @@ const setEquipo = useCallback((equipo: EquipoInfo) => {
     });
   }, []);
 
-  const addEvidence = useCallback((evidence: Omit<Evidence, 'id' | 'createdAt'>) => {
+  const addEvidence = useCallback((evidence: Omit<Evidence, 'id' | 'createdAt' | 'diagnosticId'>) => {
     setCurrentSession((prev) => {
       if (!prev) return prev;
       const newEvidence: Evidence = {
         ...evidence,
         id: genId(),
+        diagnosticId: prev.id,
         createdAt: new Date().toISOString(),
       };
       return { ...prev, evidence: [...prev.evidence, newEvidence] };

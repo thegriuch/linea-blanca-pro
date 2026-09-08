@@ -120,11 +120,14 @@ export default function ConclusionScreen() {
 
       <View style={styles.actions}>
         <PrimaryButton
-          label="Finalizar y ver reporte"
+          label="Guardar reporte y ver resumen"
           icon="check-circle"
           onPress={handleFinish}
           loading={isFinishing}
         />
+        <Text style={[styles.saveHint, { color: c.mutedForeground }]}>
+          El reporte quedará guardado en Historial y podrás compartir el DOCX después.
+        </Text>
         <View style={{ height: 10 }} />
         <PrimaryButton label="Volver al árbol" variant="outline" onPress={() => router.back()} />
       </View>
@@ -191,5 +194,13 @@ const styles = StyleSheet.create({
   },
   actions: {
     marginTop: 8,
+  },
+  saveHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 10,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
 });

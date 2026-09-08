@@ -316,19 +316,6 @@ medir_ptc: {
     evidenceLabel: 'Foto del módulo inverter mostrando falla',
     nextId: 'result_modulo_inverter',
   },
-  result_modulo_inverter: {
-    id: 'result_modulo_inverter', type: 'result',
-    text: 'Módulo Inverter con falla activa — solicitar reemplazo',
-    result: {
-      causes: [
-        { cause: 'Módulo inverter quemado o defectuoso', probability: 70 },
-        { cause: 'Sobretensión o variación eléctrica dañó el módulo', probability: 20 },
-        { cause: 'Compresor inverter en corto causó falla del módulo', probability: 10 },
-      ],
-      recommendation: 'Verificar que la alimentación eléctrica sea estable (±10% del nominal). Solicitar módulo inverter con referencia exacta del equipo. Si el módulo nuevo también falla, revisar el compresor inverter antes de instalar otro módulo.',
-      parts: ['Módulo Inverter / Driver'],
-    },
-  },
   inverter_medir_señal: {
     id: 'inverter_medir_señal', type: 'measure',
     text: 'Medir señal de salida del módulo Inverter hacia el compresor (terminales U, V, W)',
@@ -540,6 +527,15 @@ medir_ptc: {
 const NOARRANQUE: DiagnosticTree = {
   start: {
     id: 'start', type: 'question',
+    text: '¿El compresor del equipo es tipo Inverter?',
+    detail: 'Esta identificación se realiza después de validar el voltaje de alimentación y revisar si el equipo muestra un código de error.',
+    options: [
+      { label: 'Sí, es compresor Inverter', nextId: 'inverter_ev_placa', color: 'neutral' },
+      { label: 'No, es compresor convencional', nextId: 'noarranque_voltaje', color: 'success' },
+    ],
+  },
+  noarranque_voltaje: {
+    id: 'noarranque_voltaje', type: 'question',
     text: '¿Hay voltaje en los terminales del compresor cuando el equipo pide frío?',
     detail: 'Con multímetro en modo voltaje AC, mide en los terminales de alimentación del compresor mientras el termostato pide frío.',
     options: [
@@ -1647,6 +1643,160 @@ const ESCARCHA: DiagnosticTree = {
   },
 };
 
+// ─── "Congela pero no enfría" — flujo de distribución de aire e inverter ────────
+const CONGELA_NOENFRIA: DiagnosticTree = {
+  start: {
+    id: 'start', type: 'question',
+    text: '¿El congelador sí congela mientras el compartimento de refrigeración no enfría?',
+    detail: 'Confirma que el evaporador del congelador produce frío y que el síntoma principal es la falta de transferencia de aire frío hacia la zona de refrigeración.',
+    options: [
+      { label: 'Sí, el congelador congela y la nevera no enfría', nextId: 'tipo_compresor_congela', color: 'success' },
+      { label: 'No, ninguno de los dos compartimentos enfría', nextId: 'result_sin_produccion_frio', color: 'danger' },
+    ],
+  },
+  tipo_compresor_congela: {
+    id: 'tipo_compresor_congela', type: 'question',
+    text: '¿El equipo usa compresor Inverter?',
+    detail: 'Las comprobaciones del módulo Inverter aparecen aquí después de las etapas iniciales obligatorias de voltaje y código de error.',
+    options: [
+      { label: 'Sí, es Inverter', nextId: 'inverter_ev_placa_congela', color: 'neutral' },
+      { label: 'No, es convencional', nextId: 'ev_ventilador_congela', color: 'success' },
+    ],
+  },
+  inverter_ev_placa_congela: {
+    id: 'inverter_ev_placa_congela', type: 'evidence',
+    text: 'Registrar placa del compresor y módulo Inverter',
+    detail: 'Toma una foto legible de la referencia del compresor, del módulo Inverter y de cualquier LED o indicación visible. Esta evidencia permite solicitar el repuesto correcto.',
+    evidenceLabel: 'Foto de placa del compresor y módulo Inverter',
+    nextId: 'inverter_estado_congela',
+  },
+  inverter_estado_congela: {
+    id: 'inverter_estado_congela', type: 'question',
+    text: '¿El módulo Inverter muestra una falla o el código de error registrado?',
+    detail: 'Relaciona esta observación con el código que ya se revisó en el paso previo. No sustituyas el módulo sin comprobar alimentación, comunicación y compresor.',
+    options: [
+      { label: 'Sí, muestra falla o no responde', nextId: 'inverter_ev_falla_congela', color: 'danger' },
+      { label: 'No, no muestra falla visible', nextId: 'inverter_medir_senal_congela', color: 'neutral' },
+    ],
+  },
+  inverter_ev_falla_congela: {
+    id: 'inverter_ev_falla_congela', type: 'evidence',
+    text: 'Documentar la falla del módulo Inverter',
+    detail: 'Fotografía el código, el patrón de destellos o el estado del LED. Registra también la referencia del módulo y la tensión medida en su alimentación.',
+    evidenceLabel: 'Foto del módulo Inverter mostrando código o LED de falla',
+    nextId: 'result_modulo_congela',
+  },
+  inverter_medir_senal_congela: {
+    id: 'inverter_medir_senal_congela', type: 'measure',
+    text: 'Medir señal del módulo Inverter hacia el compresor',
+    detail: 'Con el equipo operando, mide la señal entre U-V, U-W y V-W. Los tres valores deben ser similares según el modelo. Trabaja solo con el procedimiento y protección indicados por el fabricante.',
+    tip: 'Una señal desbalanceada apunta al módulo; señales balanceadas con compresor detenido orientan a compresor o control de velocidad.',
+    gifUri: 'medir-señal-inverter',
+    nextId: 'inverter_senal_congela',
+  },
+  inverter_senal_congela: {
+    id: 'inverter_senal_congela', type: 'question',
+    text: '¿La señal U-V / U-W / V-W está balanceada?',
+    options: [
+      { label: 'No, hay un terminal en 0 o muy diferente', nextId: 'result_modulo_congela', color: 'danger' },
+      { label: 'Sí, los valores son similares', nextId: 'ev_ventilador_congela', color: 'success' },
+    ],
+  },
+  ev_ventilador_congela: {
+    id: 'ev_ventilador_congela', type: 'evidence',
+    text: 'Verificar ventilador del evaporador y circulación de aire',
+    detail: 'Con el equipo en demanda de frío, comprueba que el ventilador del evaporador gira libremente y que el aire frío llega al compartimento de refrigeración. Toma evidencia del ventilador y del conducto.',
+    evidenceLabel: 'Foto del ventilador y conducto de aire',
+    nextId: 'ventilador_congela_ok',
+  },
+  ventilador_congela_ok: {
+    id: 'ventilador_congela_ok', type: 'question',
+    text: '¿El ventilador del evaporador funciona y hay flujo de aire?',
+    options: [
+      { label: 'No, no gira o no hay flujo', nextId: 'result_ventilador_congela', color: 'danger' },
+      { label: 'Sí, hay flujo de aire', nextId: 'compuerta_congela', color: 'success' },
+    ],
+  },
+  compuerta_congela: {
+    id: 'compuerta_congela', type: 'question',
+    text: '¿La compuerta o ducto de aire hacia la nevera está abierto y despejado?',
+    detail: 'Revisa que la compuerta no esté trabada, que el ducto no esté bloqueado por hielo y que el empaque o alimentos no obstruyan las salidas.',
+    options: [
+      { label: 'No, está cerrada o bloqueada', nextId: 'result_flujo_congela', color: 'danger' },
+      { label: 'Sí, está abierta y despejada', nextId: 'medir_temperatura_congela', color: 'success' },
+    ],
+  },
+  medir_temperatura_congela: {
+    id: 'medir_temperatura_congela', type: 'measure',
+    text: 'Medir temperaturas y revisar sensor del compartimento de refrigeración',
+    detail: 'Mide la temperatura en ambos compartimentos y compara el sensor NTC del refrigerador con la tabla del fabricante. Si el flujo está correcto pero la lectura es errónea, revisar sensor y tarjeta.',
+    nextId: 'result_sensor_congela',
+  },
+  result_sin_produccion_frio: {
+    id: 'result_sin_produccion_frio', type: 'result',
+    text: 'El síntoma no corresponde a “congela pero no enfría”',
+    result: {
+      causes: [
+        { cause: 'El congelador tampoco está produciendo frío', probability: 100 },
+      ],
+      recommendation: 'Continuar con el árbol “No enfría” para revisar alimentación, compresor, presión y circuito frigorífico completo.',
+      parts: [],
+    },
+  },
+  result_modulo_congela: {
+    id: 'result_modulo_congela', type: 'result',
+    text: 'Revisar módulo Inverter y comunicación',
+    result: {
+      causes: [
+        { cause: 'Módulo Inverter con falla en la etapa de salida', probability: 55 },
+        { cause: 'Comunicación deficiente entre tarjeta y módulo Inverter', probability: 25 },
+        { cause: 'Alimentación inestable o fuera de especificación', probability: 20 },
+      ],
+      recommendation: 'Confirmar alimentación, conectores y comunicación según el manual. Si la señal está desbalanceada o el código confirma la falla, solicitar módulo Inverter con la referencia exacta. Verificar el compresor antes de instalarlo.',
+      parts: ['Módulo Inverter / Driver', 'Tarjeta de control'],
+    },
+  },
+  result_ventilador_congela: {
+    id: 'result_ventilador_congela', type: 'result',
+    text: 'Falla en ventilador o circulación de aire',
+    result: {
+      causes: [
+        { cause: 'Motor del ventilador del evaporador defectuoso', probability: 55 },
+        { cause: 'Ventilador bloqueado por hielo', probability: 30 },
+        { cause: 'Tarjeta no entrega alimentación al ventilador', probability: 15 },
+      ],
+      recommendation: 'Descongelar y revisar que el aspa gire libremente. Medir la alimentación del motor durante la operación. Si recibe voltaje y no gira, reemplazar el motor; si no recibe, revisar cableado y tarjeta.',
+      parts: ['Motor ventilador evaporador', 'Tarjeta de control'],
+    },
+  },
+  result_flujo_congela: {
+    id: 'result_flujo_congela', type: 'result',
+    text: 'Flujo de aire restringido entre compartimentos',
+    result: {
+      causes: [
+        { cause: 'Ducto de aire bloqueado por hielo', probability: 45 },
+        { cause: 'Compuerta de aire trabada o dañada', probability: 35 },
+        { cause: 'Obstrucción por alimentos o empaque mal instalado', probability: 20 },
+      ],
+      recommendation: 'Retirar la obstrucción, descongelar completamente si hay hielo y comprobar el movimiento de la compuerta. Documentar el estado antes y después de la corrección.',
+      parts: ['Compuerta de aire', 'Sensor o actuador de compuerta'],
+    },
+  },
+  result_sensor_congela: {
+    id: 'result_sensor_congela', type: 'result',
+    text: 'Revisar sensor o control de temperatura del refrigerador',
+    result: {
+      causes: [
+        { cause: 'Sensor NTC del compartimento de refrigeración fuera de rango', probability: 50 },
+        { cause: 'Tarjeta interpreta incorrectamente la temperatura', probability: 30 },
+        { cause: 'Flujo de aire insuficiente pese a ducto despejado', probability: 20 },
+      ],
+      recommendation: 'Comparar la resistencia del sensor con la tabla del fabricante, revisar conectores y verificar la lectura en la tarjeta. Confirmar temperaturas después de la reparación.',
+      parts: ['Sensor NTC de refrigeración', 'Tarjeta de control'],
+    },
+  },
+};
+
 // ─── Export all trees ──────────────────────────────────────────────────────────
 export const DECISION_TREES: Record<string, DiagnosticTree> = {
   noenfria:                 NOENFRIA,
@@ -1664,6 +1814,7 @@ export const DECISION_TREES: Record<string, DiagnosticTree> = {
   escarcha:                 ESCARCHA,
   nolavado:                 NOLAVADO,
   noseca:                   NOSECA,
+  congela_noenfria:         CONGELA_NOENFRIA,
 };
 
 export function getTree(treeId: string): DiagnosticTree {

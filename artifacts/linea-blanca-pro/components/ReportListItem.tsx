@@ -40,6 +40,9 @@ export function ReportListItem({ session, onPress }: Props) {
         <Text style={[styles.cause, { color: c.mutedForeground }]} numberOfLines={1}>
           {topCause}
         </Text>
+        <Text style={[styles.reportId, { color: c.mutedForeground }]} numberOfLines={1}>
+          ID: {session.id}
+        </Text>
       </View>
       <View style={styles.right}>
         <Text style={[styles.date, { color: c.mutedForeground }]}>{dateStr}</Text>
@@ -90,6 +93,10 @@ const styles = StyleSheet.create({
   },
   cause: {
     fontSize: 11,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  reportId: {
+    fontSize: 10,
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
   right: {

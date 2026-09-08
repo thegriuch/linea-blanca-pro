@@ -3,6 +3,7 @@ import type { EquipoTipo, FaultItem } from '@/types/diagnostico';
 export const FALLAS_POR_EQUIPO: Record<EquipoTipo, FaultItem[]> = {
   nevera: [
     { id: 'noenfria',       label: 'No enfría',               treeId: 'noenfria',          icon: 'thermometer' },
+    { id: 'congela-noenfria', label: 'Congela pero no enfría', treeId: 'congela_noenfria', icon: 'snowflake' },
     { id: 'congela-mucho',  label: 'Congela demasiado',       treeId: 'congelamucho',      icon: 'alert-triangle' },
     { id: 'fuga-agua',      label: 'Fuga de agua',            treeId: 'fuga_agua',         icon: 'droplet' },
     { id: 'noarranque',     label: 'Compresor no arranca',    treeId: 'noarranque',        icon: 'zap-off' },
@@ -17,6 +18,7 @@ export const FALLAS_POR_EQUIPO: Record<EquipoTipo, FaultItem[]> = {
   ],
   congelador: [
     { id: 'noenfria',       label: 'No enfría',               treeId: 'noenfria',          icon: 'thermometer' },
+    { id: 'congela-noenfria', label: 'Congela pero no enfría', treeId: 'congela_noenfria', icon: 'snowflake' },
     { id: 'congela-mucho',  label: 'Congela demasiado',       treeId: 'congelamucho',      icon: 'alert-triangle' },
     { id: 'fuga-agua',      label: 'Fuga de agua',            treeId: 'fuga_agua',         icon: 'droplet' },
     { id: 'noarranque',     label: 'Compresor no arranca',    treeId: 'noarranque',        icon: 'zap-off' },
@@ -31,6 +33,7 @@ export const FALLAS_POR_EQUIPO: Record<EquipoTipo, FaultItem[]> = {
   ],
   nevecon: [
     { id: 'noenfria',       label: 'No enfría',               treeId: 'noenfria',          icon: 'thermometer' },
+    { id: 'congela-noenfria', label: 'Congela pero no enfría', treeId: 'congela_noenfria', icon: 'snowflake' },
     { id: 'congela-mucho',  label: 'Congela demasiado',       treeId: 'congelamucho',      icon: 'alert-triangle' },
     { id: 'fuga-agua',      label: 'Fuga de agua',            treeId: 'fuga_agua',         icon: 'droplet' },
     { id: 'noarranque',     label: 'Compresor no arranca',    treeId: 'noarranque',        icon: 'zap-off' },
@@ -45,6 +48,7 @@ export const FALLAS_POR_EQUIPO: Record<EquipoTipo, FaultItem[]> = {
   ],
   minibar: [
     { id: 'noenfria',       label: 'No enfría',               treeId: 'noenfria',          icon: 'thermometer' },
+    { id: 'congela-noenfria', label: 'Congela pero no enfría', treeId: 'congela_noenfria', icon: 'snowflake' },
     { id: 'congela-mucho',  label: 'Congela demasiado',       treeId: 'congelamucho',      icon: 'alert-triangle' },
     { id: 'fuga-agua',      label: 'Fuga de agua',            treeId: 'fuga_agua',         icon: 'droplet' },
     { id: 'noarranque',     label: 'Compresor no arranca',    treeId: 'noarranque',        icon: 'zap-off' },
@@ -104,6 +108,7 @@ export const FALLAS_POR_EQUIPO: Record<EquipoTipo, FaultItem[]> = {
     { id: 'display',        label: 'Display apagado',         treeId: 'errorelectronico',  icon: 'monitor' },
   ],
   vitrina: [
+    { id: 'congela-noenfria', label: 'Congela pero no enfría', treeId: 'congela_noenfria', icon: 'snowflake' },
     { id: 'congela-mucho',  label: 'Congela demasiado',       treeId: 'congelamucho',      icon: 'alert-triangle' },
     { id: 'fuga-agua',      label: 'Fuga de agua',            treeId: 'fuga_agua',         icon: 'droplet' },
     { id: 'noarranque',     label: 'Compresor no arranca',    treeId: 'noarranque',        icon: 'zap-off' },

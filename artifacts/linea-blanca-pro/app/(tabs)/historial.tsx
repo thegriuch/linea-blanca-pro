@@ -16,6 +16,7 @@ import { useColors } from '@/hooks/useColors';
 import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { ReportListItem } from '@/components/ReportListItem';
 import { EmptyState } from '@/components/EmptyState';
+import { shareReport } from '@/utils/share';
 import colors from '@/constants/colors';
 
 export default function HistorialTab() {
@@ -23,6 +24,7 @@ export default function HistorialTab() {
   const insets = useSafeAreaInsets();
   const { sessions, deleteSession } = useDiagnostico();
   const [query, setQuery] = useState('');
+  const [sharingId, setSharingId] = useState<string | null>(null);
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   const filtered = sessions.filter((s) => {
@@ -43,6 +45,18 @@ export default function HistorialTab() {
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => deleteSession(id) },
     ]);
+  };
+
+  const handleShare = async (session: (typeof sessions)[number]) => {
+    setSharingId(session.id);
+    try {
+      await shareReport(session);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido.';
+      Alert.alert('No se pudo compartir el reporte', message);
+    } finally {
+      setSharingId(null);
+    }
   };
 
   return (
@@ -96,6 +110,16 @@ export default function HistorialTab() {
                 onPress={() => router.push(`/diagnostico/resultado/${s.id}` as any)}
               />
               <TouchableOpacity
+                onPress={() => handleShare(s)}
+                disabled={sharingId === s.id}
+                style={[styles.shareBtn, { borderColor: c.primary, marginTop: -4 }]}
+              >
+                <Feather name="share-2" size={13} color={c.primary} />
+                <Text style={[styles.shareBtnText, { color: c.primary }]}>
+                  {sharingId === s.id ? 'Preparando DOCX...' : 'Compartir DOCX'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={() => handleDelete(s.id)}
                 style={[styles.deleteBtn, { marginTop: -8, marginBottom: 12 }]}
               >
@@ -146,6 +170,22 @@ const styles = StyleSheet.create({
     gap: 4,
     alignSelf: 'flex-end',
     paddingHorizontal: 4,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  shareBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),
   },
   deleteBtnText: {
     fontSize: 12,

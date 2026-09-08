@@ -41,6 +41,7 @@ export function buildReportText(session: DiagnosticSession): string {
     '══════════════════════════════',
     '',
     `TÉCNICO: ${session.tecnico || '—'}`,
+    `ID DIAGNÓSTICO: ${session.id}`,
     `FECHA INICIO: ${fmt(session.startedAt)}`,
     `FECHA FIN: ${fmt(session.finishedAt)}`,
     '',
@@ -233,13 +234,14 @@ async function buildDocx(session: DiagnosticSession): Promise<Document> {
       spacing: { after: 220 },
       children: [
         new TextRun({
-          text: `${equipo.label} · ${session.equipo.marca || 'Marca no registrada'}`,
+          text: `${equipo.label} · ${session.equipo.marca || 'Marca Kalley'}`,
           color: REPORT_GRAY,
           size: 20,
         }),
       ],
     }),
     heading('Información del servicio'),
+    field('ID de diagnóstico', session.id),
     field('Técnico', session.tecnico),
     field('Fecha de inicio', fmt(session.startedAt)),
     field('Fecha de finalización', fmt(session.finishedAt)),

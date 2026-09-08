@@ -13,6 +13,8 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { searchSintomas } from '@/constants/sintomas';
+import { searchCodigosError } from '@/constants/codigos_error';
+import { getEquipoInfo } from '@/constants/equipos';
 import { EmptyState } from '@/components/EmptyState';
 import colors from '@/constants/colors';
 
@@ -31,6 +33,7 @@ function Stars({ count }: { count: number }) {
 const SUGGESTIONS = [
   'no enfría', 'compresor no arranca', 'hace ruido', 'no centrifuga',
   'no desagua', 'fuga de agua', 'error electrónico', 'escarcha excesiva',
+  'E50', '1 Flash',
 ];
 
 export default function BuscarTab() {
@@ -38,22 +41,24 @@ export default function BuscarTab() {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const results = searchSintomas(query);
+  const codeResults = searchCodigosError(query);
+  const hasResults = results.length > 0 || codeResults.length > 0;
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPadding + 16, backgroundColor: c.background, borderBottomColor: c.border }]}>
-        <Text style={[styles.title, { color: c.foreground }]}>Buscar síntoma</Text>
+        <Text style={[styles.title, { color: c.foreground }]}>Buscar diagnóstico</Text>
         <Text style={[styles.sub, { color: c.mutedForeground }]}>
-          Describe la falla y obtén causas probables con ranking
+          Busca síntomas, causas, artículos y códigos de error
         </Text>
         <View style={[styles.searchBar, { backgroundColor: c.card, borderColor: query ? c.primary : c.border, borderRadius: colors.radius }]}>
           <Feather name="search" size={16} color={query ? c.primary : c.mutedForeground} />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Ej: no enfría, compresor zumba..."
+            placeholder="Ej: no enfría, E50, 1 Flash..."
             placeholderTextColor={c.mutedForeground}
             style={[styles.searchInput, { color: c.foreground }]}
             autoCorrect={false}
@@ -71,7 +76,7 @@ export default function BuscarTab() {
         contentContainerStyle={{
           padding: 16,
           paddingBottom: Platform.OS === 'web' ? 34 + 84 : insets.bottom + 90,
-          flexGrow: (!query || results.length === 0) ? 1 : undefined,
+          flexGrow: (!query || !hasResults) ? 1 : undefined,
         }}
       >
         {!query ? (
@@ -89,52 +94,83 @@ export default function BuscarTab() {
               ))}
             </View>
           </>
-        ) : results.length === 0 ? (
+        ) : !hasResults ? (
           <EmptyState
             icon="search"
             title="Sin resultados"
             description={`No se encontraron causas para "${query}". Intenta con otros términos.`}
           />
         ) : (
-          results.map(({ entry }, entryIdx) => (
-            <View key={entryIdx} style={[styles.resultGroup, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}>
-              <Text style={[styles.resultGroupTitle, { color: c.primary }]}>
-                Posibles causas para: "{entry.keywords[0]}"
-              </Text>
-              {entry.results.map((r, i) => (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => r.treeId ? router.push('/diagnostico/nuevo') : r.articleId ? router.push(`/biblioteca/articulo/${r.articleId}` as any) : undefined}
-                  activeOpacity={r.treeId || r.articleId ? 0.75 : 1}
-                  style={[styles.resultItem, { borderTopColor: c.border, borderTopWidth: i > 0 ? 1 : 0 }]}
-                >
-                  <View style={styles.resultHeader}>
-                    <Stars count={r.stars} />
-                    {r.treeId && (
-                      <View style={[styles.diagBadge, { backgroundColor: c.primary + '15', borderRadius: 6 }]}>
-                        <Text style={[styles.diagBadgeText, { color: c.primary }]}>Árbol diagnóstico</Text>
+          <>
+            {codeResults.length > 0 && (
+              <View style={[styles.resultGroup, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}>
+                <Text style={[styles.resultGroupTitle, { color: c.accent }]}>Códigos de error encontrados</Text>
+                {codeResults.map((cod, index) => (
+                  <View
+                    key={`${cod.equipoTipo}-${cod.codigo}-${index}`}
+                    style={[styles.resultItem, { borderTopColor: c.border, borderTopWidth: index > 0 ? 1 : 0 }]}
+                  >
+                    <View style={styles.resultHeader}>
+                      <View style={[styles.codigoBadge, { backgroundColor: c.accent + '18', borderRadius: 6 }]}>
+                        <Text style={[styles.codigoBadgeText, { color: c.accent }]}>{cod.codigo}</Text>
                       </View>
-                    )}
-                    {r.articleId && (
-                      <View style={[styles.diagBadge, { backgroundColor: c.accent + '15', borderRadius: 6 }]}>
-                        <Text style={[styles.diagBadgeText, { color: c.accent }]}>Biblioteca</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={[styles.resultCause, { color: c.foreground }]}>{r.cause}</Text>
-                  <Text style={[styles.resultDetail, { color: c.mutedForeground }]}>{r.detail}</Text>
-                  {(r.treeId || r.articleId) && (
-                    <View style={styles.resultAction}>
-                      <Feather name={r.treeId ? 'git-branch' : 'book-open'} size={12} color={c.primary} />
-                      <Text style={[styles.resultActionText, { color: c.primary }]}>
-                        {r.treeId ? 'Iniciar diagnóstico guiado' : 'Leer artículo'}
+                      <Text style={[styles.codigoEquipo, { color: c.mutedForeground }]}>
+                        {getEquipoInfo(cod.equipoTipo).label}
                       </Text>
                     </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          ))
+                    <Text style={[styles.resultCause, { color: c.foreground }]}>{cod.descripcion}</Text>
+                    <Text style={[styles.resultDetail, { color: c.mutedForeground }]} numberOfLines={3}>
+                      {cod.solucion}
+                    </Text>
+                    {cod.equivalentes && (
+                      <Text style={[styles.codigoEquivalentes, { color: c.mutedForeground }]}>
+                        También: {cod.equivalentes}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+            {results.map(({ entry }, entryIdx) => (
+              <View key={entryIdx} style={[styles.resultGroup, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}>
+                <Text style={[styles.resultGroupTitle, { color: c.primary }]}>
+                  Posibles causas para: "{entry.keywords[0]}"
+                </Text>
+                {entry.results.map((r, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => r.treeId ? router.push('/diagnostico/nuevo') : r.articleId ? router.push(`/biblioteca/articulo/${r.articleId}` as any) : undefined}
+                    activeOpacity={r.treeId || r.articleId ? 0.75 : 1}
+                    style={[styles.resultItem, { borderTopColor: c.border, borderTopWidth: i > 0 ? 1 : 0 }]}
+                  >
+                    <View style={styles.resultHeader}>
+                      <Stars count={r.stars} />
+                      {r.treeId && (
+                        <View style={[styles.diagBadge, { backgroundColor: c.primary + '15', borderRadius: 6 }]}>
+                          <Text style={[styles.diagBadgeText, { color: c.primary }]}>Árbol diagnóstico</Text>
+                        </View>
+                      )}
+                      {r.articleId && (
+                        <View style={[styles.diagBadge, { backgroundColor: c.accent + '15', borderRadius: 6 }]}>
+                          <Text style={[styles.diagBadgeText, { color: c.accent }]}>Biblioteca</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.resultCause, { color: c.foreground }]}>{r.cause}</Text>
+                    <Text style={[styles.resultDetail, { color: c.mutedForeground }]}>{r.detail}</Text>
+                    {(r.treeId || r.articleId) && (
+                      <View style={styles.resultAction}>
+                        <Feather name={r.treeId ? 'git-branch' : 'book-open'} size={12} color={c.primary} />
+                        <Text style={[styles.resultActionText, { color: c.primary }]}>
+                          {r.treeId ? 'Iniciar diagnóstico guiado' : 'Leer artículo'}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ))}
+          </>
         )}
       </ScrollView>
     </View>
@@ -245,5 +281,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),
+  },
+  codigoBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  codigoBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  codigoEquipo: {
+    fontSize: 11,
+    flex: 1,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  codigoEquivalentes: {
+    fontSize: 11,
+    marginTop: 3,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
 });

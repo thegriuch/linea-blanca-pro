@@ -18,7 +18,7 @@ const STEPS = ['Datos', 'Equipo', 'Falla'];
 export default function NuevoScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { currentSession, startSession, updateCliente, setTecnico, tecnico, setEquipo } = useDiagnostico();
+  const { currentSession, startSession, discardSession, updateCliente, setTecnico, tecnico, setEquipo } = useDiagnostico();
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [ciudad, setCiudad] = useState('');
@@ -26,9 +26,10 @@ export default function NuevoScreen() {
   const [equipo, setEquipoLocal] = useState<EquipoTipo>('nevera');
 
   useEffect(() => {
-    if (!currentSession) {
-      startSession();
-    }
+    // Cada entrada a “Nuevo diagnóstico” debe comenzar con un ID y evidencias
+    // propios, incluso si quedó una sesión incompleta en almacenamiento.
+    discardSession();
+    startSession();
   }, []);
 
   const handleContinue = () => {

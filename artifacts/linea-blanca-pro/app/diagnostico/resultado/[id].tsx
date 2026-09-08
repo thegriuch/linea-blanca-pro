@@ -71,6 +71,7 @@ export default function ResultadoScreen() {
             {session.equipo.marca}{session.equipo.modelo ? ` ${session.equipo.modelo}` : ''}
           </Text>
           <Text style={styles.bannerSub}>{fmt(session.finishedAt)}</Text>
+          <Text style={styles.bannerSub}>ID: {session.id}</Text>
         </View>
         <TouchableOpacity
           onPress={handleShare}
