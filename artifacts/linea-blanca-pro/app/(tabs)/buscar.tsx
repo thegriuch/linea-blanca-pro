@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Platform,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { searchSintomas } from '@/constants/sintomas';
-import { searchCodigosError } from '@/constants/codigos_error';
+import { searchCodigosError, type CodigoErrorEncontrado } from '@/constants/codigos_error';
 import { getEquipoInfo } from '@/constants/equipos';
 import { EmptyState } from '@/components/EmptyState';
 import colors from '@/constants/colors';
@@ -40,6 +41,7 @@ export default function BuscarTab() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
+  const [selectedCode, setSelectedCode] = useState<CodigoErrorEncontrado | null>(null);
   const results = searchSintomas(query);
   const codeResults = searchCodigosError(query);
   const hasResults = results.length > 0 || codeResults.length > 0;
@@ -105,9 +107,14 @@ export default function BuscarTab() {
             {codeResults.length > 0 && (
               <View style={[styles.resultGroup, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}>
                 <Text style={[styles.resultGroupTitle, { color: c.accent }]}>Códigos de error encontrados</Text>
+                <Text style={[styles.resultGroupHint, { color: c.mutedForeground }]}>
+                  Toca un código para ver su significado, causas y procedimiento completo.
+                </Text>
                 {codeResults.map((cod, index) => (
-                  <View
+                  <TouchableOpacity
                     key={`${cod.equipoTipo}-${cod.codigo}-${index}`}
+                    onPress={() => setSelectedCode(cod)}
+                    activeOpacity={0.75}
                     style={[styles.resultItem, { borderTopColor: c.border, borderTopWidth: index > 0 ? 1 : 0 }]}
                   >
                     <View style={styles.resultHeader}>
@@ -127,7 +134,7 @@ export default function BuscarTab() {
                         También: {cod.equivalentes}
                       </Text>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             )}
@@ -173,6 +180,86 @@ export default function BuscarTab() {
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={selectedCode !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelectedCode(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: c.background }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.modalTitle, { color: c.foreground }]}>Detalle del código</Text>
+                <Text style={[styles.modalSubtitle, { color: c.mutedForeground }]}>
+                  {selectedCode ? getEquipoInfo(selectedCode.equipoTipo).label : ''}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setSelectedCode(null)}
+                style={[styles.modalClose, { backgroundColor: c.muted }]}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar detalle del código"
+              >
+                <Feather name="x" size={21} color={c.foreground} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedCode && (
+              <ScrollView
+                contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 24 }}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={[styles.modalCodeHeader, { backgroundColor: c.accent + '15', borderColor: c.accent, borderRadius: colors.radius }]}>
+                  <View style={[styles.modalCodeBadge, { backgroundColor: c.accent, borderRadius: 9 }]}>
+                    <Text style={styles.modalCodeText}>{selectedCode.codigo}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.modalDescription, { color: c.foreground }]}>
+                      {selectedCode.descripcion}
+                    </Text>
+                    {selectedCode.equivalentes && (
+                      <Text style={[styles.codigoEquivalentes, { color: c.mutedForeground, marginTop: 5 }]}>
+                        También puede aparecer como: {selectedCode.equivalentes}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                <Text style={[styles.modalSectionTitle, { color: c.foreground }]}>Posibles causas</Text>
+                {selectedCode.causas.map((causa, index) => (
+                  <View key={`${selectedCode.codigo}-causa-${index}`} style={styles.modalCauseRow}>
+                    <View style={[styles.modalCauseNumber, { backgroundColor: c.primary + '18' }]}>
+                      <Text style={[styles.modalCauseNumberText, { color: c.primary }]}>{index + 1}</Text>
+                    </View>
+                    <Text style={[styles.modalCauseText, { color: c.foreground }]}>{causa}</Text>
+                  </View>
+                ))}
+
+                <Text style={[styles.modalSectionTitle, { color: c.foreground }]}>Procedimiento de diagnóstico</Text>
+                <View style={[styles.modalSolution, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}>
+                  <Text style={[styles.modalSolutionText, { color: c.foreground }]}>{selectedCode.solucion}</Text>
+                </View>
+
+                {selectedCode.partes && selectedCode.partes.length > 0 && (
+                  <>
+                    <Text style={[styles.modalSectionTitle, { color: c.foreground }]}>Repuestos posibles</Text>
+                    <View style={{ gap: 7 }}>
+                      {selectedCode.partes.map((parte) => (
+                        <View key={`${selectedCode.codigo}-${parte}`} style={[styles.modalPart, { backgroundColor: c.muted }]}>
+                          <Feather name="package" size={14} color={c.accent} />
+                          <Text style={[styles.modalPartText, { color: c.foreground }]}>{parte}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -242,6 +329,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
   },
+  resultGroupHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
   resultItem: {
     padding: 12,
     gap: 4,
@@ -299,6 +393,122 @@ const styles = StyleSheet.create({
   codigoEquivalentes: {
     fontSize: 11,
     marginTop: 3,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.62)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    maxHeight: '92%',
+    minHeight: '58%',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  modalClose: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCodeHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    marginBottom: 18,
+  },
+  modalCodeBadge: {
+    minWidth: 58,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  modalCodeText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  modalDescription: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '700',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  modalSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 9,
+    marginTop: 2,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  modalCauseRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+    marginBottom: 8,
+  },
+  modalCauseNumber: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCauseNumberText: {
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  modalCauseText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  modalSolution: {
+    borderWidth: 1,
+    padding: 13,
+    marginBottom: 18,
+  },
+  modalSolutionText: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  modalPart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  modalPartText: {
+    flex: 1,
+    fontSize: 13,
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
 });

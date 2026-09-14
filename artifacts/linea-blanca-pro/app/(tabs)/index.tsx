@@ -22,6 +22,7 @@ const QUICK_ACTIONS = [
   { icon: 'book-open' as const, label: 'Biblioteca\nTécnica', route: '/(tabs)/biblioteca', color: '#047857' },
   { icon: 'clock' as const, label: 'Ver\nHistorial', route: '/(tabs)/historial', color: '#7C3AED' },
   { icon: 'thermometer' as const, label: 'Regla de\nRefrigerantes', route: '/refrigerantes', color: '#0891B2' },
+  { icon: 'activity' as const, label: 'Sensor de\nTemperatura', route: '/sensores-temperatura', color: '#B45309' },
 ];
 
 export default function HomeScreen() {

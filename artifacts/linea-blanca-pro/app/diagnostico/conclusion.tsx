@@ -44,6 +44,21 @@ export default function ConclusionScreen() {
     }
   };
 
+  const handleFinishToHome = async () => {
+    setIsFinishing(true);
+    try {
+      const completed = completeSession();
+      if (completed) {
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido.';
+      Alert.alert('No se pudo finalizar el diagnóstico', message);
+    } finally {
+      setIsFinishing(false);
+    }
+  };
+
   return (
     <KeyboardAwareScrollViewCompat
       style={{ flex: 1, backgroundColor: c.background }}
@@ -136,6 +151,14 @@ export default function ConclusionScreen() {
         <Text style={[styles.saveHint, { color: c.mutedForeground }]}>
           El reporte quedará guardado en Historial y podrás compartir el DOCX después.
         </Text>
+        <View style={{ height: 10 }} />
+        <PrimaryButton
+          label="Finalizar diagnóstico y volver al menú"
+          icon="home"
+          variant="outline"
+          onPress={handleFinishToHome}
+          loading={isFinishing}
+        />
         <View style={{ height: 10 }} />
         <PrimaryButton label="Volver al árbol" variant="outline" onPress={() => router.back()} />
       </View>
