@@ -28,6 +28,7 @@ function RootLayoutNav() {
       <Stack.Screen name="diagnostico/arbol" options={{ title: 'Diagnóstico Guiado', headerShadowVisible: false }} />
       <Stack.Screen name="diagnostico/conclusion" options={{ title: 'Conclusión', headerShadowVisible: false }} />
       <Stack.Screen name="diagnostico/resultado/[id]" options={{ title: 'Resultado', headerShadowVisible: false }} />
+      <Stack.Screen name="sensores-temperatura/index" options={{ title: 'Tabla del sensor NTC', headerShadowVisible: false }} />
       <Stack.Screen name="biblioteca/[category]" options={{ title: 'Biblioteca', headerShadowVisible: false }} />
       <Stack.Screen name="biblioteca/articulo/[id]" options={{ title: 'Artículo', headerShadowVisible: false }} />
     </Stack>
