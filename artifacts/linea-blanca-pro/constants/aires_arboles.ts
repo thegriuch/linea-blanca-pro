@@ -276,9 +276,63 @@ export const AIR_ERROR_TREES: Record<string, DiagnosticTree> = {
 };
 
 const CODE_TREE_IDS: Record<string, string> = {
-  E5: 'aire_e5_ipm',
-  F1: 'aire_f1_ntc',
-  F2: 'aire_f2_ntc',
+  // ─── Códigos principales con árboles específicos ──────────────────────
+  E5:  'aire_e5_ipm',       // Protección IPM / sobrecorriente
+  F1:  'aire_f1_ntc',       // Sensor NTC interior
+  F2:  'aire_f2_ntc',       // Sensor NTC evaporador
+  
+  // ─── Sensores (EC / EH / EHC / FHCC) → error electrónico ─────────────
+  EC52: 'errorelectronico',  // Sensor T3 condensador
+  EC53: 'errorelectronico',  // Sensor T4 ambiente exterior
+  EC54: 'errorelectronico',  // Sensor TP descarga compresor
+  EC56: 'errorelectronico',  // Sensor T2B unidad exterior
+  ECC1: 'errorelectronico',  // Sensor refrigerante unidad interior (multizona)
+  EH60: 'errorelectronico',  // Sensor T1 ambiente interior
+  EH61: 'errorelectronico',  // Sensor T2 tubería/serpentín interior
+  EH62: 'errorelectronico',  // Sensor/módulo aire fresco
+  EHC1: 'errorelectronico',  // Sensor refrigerante detecta fuga
+  EHC2: 'errorelectronico',  // Sensor fuera de rango + fuga
+  EHC3: 'errorelectronico',  // Sensor refrigerante fuera de rango
+  FHCC: 'errorelectronico',  // Error sensor refrigerante
+  
+  // ─── EEPROM / Memoria → error electrónico ────────────────────────────
+  EC51: 'errorelectronico',  // EEPROM unidad exterior
+  EH00: 'errorelectronico',  // EEPROM unidad interior
+  EH0A: 'errorelectronico',  // Parámetros EEPROM unidad interior
+  
+  // ─── Comunicación → error electrónico ────────────────────────────────
+  E6:     'errorelectronico',  // Comunicación interior-exterior
+  EH0B:   'errorelectronico',  // Comunicación PCB principal-display
+  EHB3:   'errorelectronico',  // Comunicación controlador cableado
+  EHBA:   'errorelectronico',  // Comunicación módulo ventilador externo
+  EHBE:   'errorelectronico',  // Comunicación radar-display
+  EL01:   'errorelectronico',  // Comunicación interior-exterior (otro formato)
+  
+  // ─── Ventiladores / Motores → ruido excesivo ─────────────────────────
+  EC07:  'ruidoexcesivo',    // Velocidad ventilador DC exterior
+  EH03:  'ruidoexcesivo',    // Velocidad ventilador interior
+  EH3A:  'ruidoexcesivo',    // Protección tensión DC módulo ventilador exterior
+  EH3B:  'ruidoexcesivo',    // Tensión DC alta módulo ventilador exterior
+  EH3C:  'ruidoexcesivo',    // Anomalía módulo/motor aire fresco
+  
+  // ─── Voltaje / Cruce por cero → error electrónico ────────────────────
+  EH02:  'errorelectronico', // Detección cruce por cero
+  PC01:  'errorelectronico', // Protección tensión alta/baja
+  PC0L:  'errorelectronico', // Baja temperatura ambiente (sensor T4)
+  
+  // ─── Protecciones compresor / IPM / Presión → aire_e5_ipm o noarranque ─
+  PC00:  'aire_e5_ipm',      // Protección IPM / sobrecorriente IGBT
+  PC02:  'noarranque',       // Alta temp compresor/IPM/presión → noarranque
+  PC03:  'noarranque',       // Protección presión sistema → noarranque
+  PC04:  'aire_e5_ipm',      // Error accionamiento inverter compresor
+  PC08:  'aire_e5_ipm',      // Protección sobrecorriente
+  PC40:  'aire_e5_ipm',      // Comunicación principal-driver compresor
+  
+  // ─── Fugas / Refrigerante → noarranque (requiere diagnóstico presión) ─
+  EL0C:  'noarranque',       // Falta refrigerante / detección fuga
+  
+  // ─── Modos de servicio / No fallas → sin árbol (usar árbol por síntoma) ─
+  // AP, CL, DF, FC, SC, CP, DE, FP no son fallas, se mantienen en árbol por síntoma
 };
 
 export function getAirErrorTreeId(code: string): string | undefined {

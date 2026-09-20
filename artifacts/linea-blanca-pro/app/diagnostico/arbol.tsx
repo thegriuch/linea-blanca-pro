@@ -21,6 +21,7 @@ import { useColors } from '@/hooks/useColors';
 import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { getNode } from '@/constants/arboles';
+import { getAirErrorTreeId } from '@/constants/aires_arboles';
 import { getCodigosError, type CodigoError } from '@/constants/codigos_error';
 import { GIFS, getGifUri } from '@/constants/gifs';
 import type { TreeNode } from '@/types/diagnostico';
@@ -72,6 +73,7 @@ export default function ArbolScreen() {
     addEvidence,
     setErrorCode,
     setResult,
+    setEquipo,
   } = useDiagnostico();
 
   // ── Etapas del flujo ────────────────────────────────────────────────────
@@ -183,6 +185,15 @@ export default function ArbolScreen() {
   // Usar código de error como resultado final
   const iniciarArbolConCodigo = () => {
     if (!codigoSel) return;
+    const codeTreeId = equipo.tipo === 'aire' ? getAirErrorTreeId(codigoSel.codigo) : undefined;
+    if (codeTreeId) {
+      setEquipo({
+        ...equipo,
+        treeId: codeTreeId,
+        fallaId: `codigo-${codigoSel.codigo.toLowerCase()}`,
+        fallaLabel: `Código ${codigoSel.codigo}`,
+      });
+    }
     setErrorCode({
       codigo: codigoSel.codigo,
       descripcion: codigoSel.descripcion,
