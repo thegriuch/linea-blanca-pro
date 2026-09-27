@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Escanea para abrir Línea Blanca Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; background: #145DA0; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+  .card { background: #fff; color: #111; padding: 32px 40px; border-radius: 20px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p { color: #555; font-size: 13px; margin: 0 0 18px; }
+  #qr { display: inline-block; padding: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; }
+  code { display: block; margin-top: 14px; background: #f3f4f6; color: #145DA0; padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>📱 Línea Blanca Pro — Desarrollo</h1>
+    <p>Abre <strong>Expo Go</strong> en tu celular y escanea este código</p>
+    <div id="qr"></div>
+    <code>exp://192.168.10.10:8081</code>
+  </div>
+  <script>
+    const qr = qrcode(0, 'M');
+    qr.addData('exp://192.168.10.10:8081');
+    qr.make();
+    document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 0 });
+  </script>
+</body>
+</html>

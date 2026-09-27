@@ -3,6 +3,9 @@
     "name": "Línea Blanca Pro",
     "slug": "linea-blanca-pro",
     "version": "2.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "linea-blanca-pro",
@@ -52,7 +55,8 @@
           "cameraPermission": "Se requiere acceso a la cámara para tomar fotos de evidencia durante el diagnóstico técnico."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -63,6 +67,12 @@
         "projectId": "5e24d4a3-e4dd-4512-89ce-f7589d2448c7"
       }
     },
-    "owner": "thegriuch1"
+    "owner": "thegriuch1",
+    "updates": {
+      "url": "https://u.expo.dev/5e24d4a3-e4dd-4512-89ce-f7589d2448c7",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    }
   }
 }

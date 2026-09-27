@@ -68,6 +68,13 @@ catalog:
 
 autoInstallPeers: false
 
+# React Native y los plugins de Babel de la cadena de Expo (p. ej. react-native-worklets)
+# resuelven paquetes como @babel/traverse sin declararlos. El aislamiento estricto de pnpm
+# los deja inalcanzables para Metro. Los elevamos al node_modules raíz para que Metro los encuentre.
+publicHoistPattern:
+  - '@babel/*'
+  - 'react-native*'
+
 onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
@@ -118,7 +125,8 @@ overrides:
   "lightningcss>lightningcss-linux-arm64-musl": "-"
   "lightningcss>lightningcss-linux-x64-musl": "-"
   "lightningcss>lightningcss-win32-arm64-msvc": "-"
-  "lightningcss>lightningcss-win32-x64-msvc": "-"
+  # Necesario para bundlear la app en Windows (Expo Go / navegador web local)
+  # "lightningcss>lightningcss-win32-x64-msvc": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-android-arm64": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-darwin-arm64": "-"
   "@tailwindcss/oxide>@tailwindcss/oxide-darwin-x64": "-"

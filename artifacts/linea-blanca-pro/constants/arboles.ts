@@ -1,5 +1,7 @@
 import type { DiagnosticTree } from '@/types/diagnostico';
 import { AIR_ERROR_TREES } from '@/constants/aires_arboles';
+import { INVERTER_TREE } from '@/constants/arbol_inverter';
+import { NEVERA_CODE_TREES } from '@/constants/arboles_nevera';
 
 // ─── "No Enfría" — árbol fiel al diagrama oficial de flujo ───────────────────
 const NOENFRIA: DiagnosticTree = {
@@ -44,7 +46,18 @@ ev_corriente: {
     detail: 'Con pinza amperimétrica, mide el amperaje consumido por el compresor durante el intento de arranque. Compara con el valor RLA de la placa.',
     evidenceLabel: 'Foto del amperaje en compresor (pinza + display)',
     gifUri: 'medir-amperaje',
-    nextId: 'consumo_bajo',
+    nextId: 'inverter_gate',
+  },
+  // ── Portón inverter: se pregunta siempre tras voltaje/amperaje ──────────
+  inverter_gate: {
+    id: 'inverter_gate', type: 'question',
+    text: '¿El compresor del equipo es tecnología Inverter?',
+    detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
+    tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
+    options: [
+      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'No, es compresor convencional', nextId: 'consumo_bajo', color: 'success' },
+    ],
   },
   consumo_bajo: {
     id: 'consumo_bajo', type: 'question',
@@ -279,85 +292,10 @@ medir_ptc: {
     text: '¿PTC en corto (≈0 Ω) o protector térmico se activa permanentemente?',
     options: [
       { label: 'Sí, PTC en corto o protector no retorna', nextId: 'ev_ptc', color: 'danger' },
-      { label: 'No, kit PTC normal', nextId: 'tipo_inverter', color: 'success' },
+      { label: 'No, kit PTC normal', nextId: 'verificar_presiones', color: 'success' },
     ],
   },
 
-  // ── VALIDACIÓN INVERTER ──────────────────────────────────────────────────
-  tipo_inverter: {
-    id: 'tipo_inverter', type: 'question',
-    text: '¿El compresor del equipo es tipo Inverter?',
-    detail: 'Los compresores Inverter NO tienen relé PTC externo. Se alimentan desde un módulo driver (inverter board) que controla la velocidad. Revisa la placa del compresor o el manual del equipo.',
-    tip: 'Indicios de compresor Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible, frecuencia variable audible al operar.',
-    options: [
-      { label: 'Sí, es compresor Inverter', nextId: 'inverter_ev_placa', color: 'neutral' },
-      { label: 'No, es compresor convencional', nextId: 'verificar_presiones', color: 'success' },
-    ],
-  },
-  inverter_ev_placa: {
-    id: 'inverter_ev_placa', type: 'evidence',
-    text: 'Tomar foto de la placa del compresor y del módulo Inverter (driver)',
-    detail: 'Registra el número de modelo del compresor y del módulo inverter. Esta información es necesaria para solicitar el repuesto correcto.',
-    evidenceLabel: 'Foto de placa del compresor y módulo inverter',
-    nextId: 'inverter_check_modulo',
-  },
-  inverter_check_modulo: {
-    id: 'inverter_check_modulo', type: 'question',
-    text: '¿El módulo Inverter muestra señal de falla? (LED parpadeante, código en display, o sin respuesta)',
-    detail: 'Algunos módulos tienen LEDs de diagnóstico. Consulta el manual técnico del equipo para interpretar el patrón de parpadeos o el código mostrado.',
-    options: [
-      { label: 'Sí, muestra falla o no responde', nextId: 'inverter_ev_falla_modulo', color: 'danger' },
-      { label: 'No, módulo sin indicación de falla visible', nextId: 'inverter_medir_señal', color: 'neutral' },
-    ],
-  },
-  inverter_ev_falla_modulo: {
-    id: 'inverter_ev_falla_modulo', type: 'evidence',
-    text: 'Registrar el código / indicación de falla del módulo Inverter',
-    detail: 'Fotografía el módulo mostrando el LED o código de error. Anota exactamente el patrón de parpadeos o el código numérico para el informe.',
-    evidenceLabel: 'Foto del módulo inverter mostrando falla',
-    nextId: 'result_modulo_inverter',
-  },
-  inverter_medir_señal: {
-    id: 'inverter_medir_señal', type: 'measure',
-    text: 'Medir señal de salida del módulo Inverter hacia el compresor (terminales U, V, W)',
-    detail: 'Con el equipo energizado y el compresor intentando arrancar, mide AC entre cada par de terminales: U-V, U-W, V-W. Deben mostrar valores similares entre sí (20–200 V AC según modelo y velocidad de operación).',
-    tip: 'Si los tres valores son similares y el compresor no gira → el compresor está bloqueado. Si algún valor es 0 o muy diferente → el módulo tiene falla en la etapa de potencia.',
-    gifUri: 'medir-señal-inverter',
-    nextId: 'inverter_señal_ok',
-  },
-  inverter_señal_ok: {
-    id: 'inverter_señal_ok', type: 'question',
-    text: '¿Los tres terminales (U–V, U–W, V–W) muestran señal AC similar entre sí?',
-    options: [
-      { label: 'Sí, señales balanceadas y similares', nextId: 'result_compresor_inverter', color: 'neutral' },
-      { label: 'No, algún terminal en 0 o con valor muy diferente', nextId: 'result_modulo_salida', color: 'danger' },
-    ],
-  },
-  result_compresor_inverter: {
-    id: 'result_compresor_inverter', type: 'result',
-    text: 'Compresor Inverter bloqueado o defectuoso — solicitar reemplazo',
-    result: {
-      causes: [
-        { cause: 'Compresor inverter bloqueado mecánicamente', probability: 55 },
-        { cause: 'Devanados del compresor inverter en corto o abiertos', probability: 35 },
-        { cause: 'Sensor de posición del rotor defectuoso', probability: 10 },
-      ],
-      recommendation: 'Medir resistencia entre U-V, U-W, V-W en el compresor (deben ser idénticos, típicamente 1–10 Ω). Verificar que no haya continuidad a tierra. Solicitar compresor inverter con la referencia exacta del equipo.',
-      parts: ['Compresor Inverter'],
-    },
-  },
-  result_modulo_salida: {
-    id: 'result_modulo_salida', type: 'result',
-    text: 'Módulo Inverter con falla en etapa de salida — solicitar reemplazo',
-    result: {
-      causes: [
-        { cause: 'IGBT/MOSFET de salida del módulo defectuoso', probability: 75 },
-        { cause: 'Circuito de disparo (gate driver) dañado', probability: 25 },
-      ],
-      recommendation: 'Señal desbalanceada confirma falla en la etapa de potencia del módulo inverter. Solicitar reemplazo con la referencia exacta. Antes de instalar, verificar que el compresor no esté en corto para no dañar el módulo nuevo.',
-      parts: ['Módulo Inverter / Driver'],
-    },
-  },
   ev_ptc: {
     id: 'ev_ptc', type: 'evidence',
     text: 'Tomar evidencia y solicitar kit PTC',
@@ -522,6 +460,8 @@ medir_ptc: {
       parts: [],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía inverter_gate)
+  ...INVERTER_TREE,
 };
 
 // ─── "No Arranca Compresor" tree ──────────────────────────────────────────────
@@ -531,7 +471,7 @@ const NOARRANQUE: DiagnosticTree = {
     text: '¿El compresor del equipo es tipo Inverter?',
     detail: 'Esta identificación se realiza después de validar el voltaje de alimentación y revisar si el equipo muestra un código de error.',
     options: [
-      { label: 'Sí, es compresor Inverter', nextId: 'inverter_ev_placa', color: 'neutral' },
+      { label: 'Sí, es compresor Inverter', nextId: 'inv_start', color: 'neutral' },
       { label: 'No, es compresor convencional', nextId: 'noarranque_voltaje', color: 'success' },
     ],
   },
@@ -581,7 +521,17 @@ const NOARRANQUE: DiagnosticTree = {
     id: 'ev_amperaje_arranque', type: 'evidence',
     text: 'Registrar amperaje en intento de arranque',
     evidenceLabel: 'Foto de amperaje durante intento de arranque',
-    nextId: 'result_ptc_o_compresor',
+    nextId: 'gate_inverter_arranque',
+  },
+  gate_inverter_arranque: {
+    id: 'gate_inverter_arranque', type: 'question',
+    text: '¿El compresor del equipo es tecnología Inverter?',
+    detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
+    tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
+    options: [
+      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'No, es compresor convencional', nextId: 'result_ptc_o_compresor', color: 'success' },
+    ],
   },
   result_ptc_o_compresor: {
     id: 'result_ptc_o_compresor', type: 'result',
@@ -615,6 +565,8 @@ const NOARRANQUE: DiagnosticTree = {
       parts: ['Compresor'],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_arranque)
+  ...INVERTER_TREE,
 };
 
 // ─── "Ruido excesivo" tree ────────────────────────────────────────────────────
@@ -633,7 +585,17 @@ const RUIDOEXCESIVO: DiagnosticTree = {
     text: 'Medir amperaje y presiones del compresor en marcha',
     detail: 'Un compresor ruidoso puede tener alto amperaje (desgaste mecánico) o trabajar contra presiones incorrectas.',
     gifUri: 'medicion-compresor-kalley',
-    nextId: 'result_compresor_ruido',
+    nextId: 'gate_inverter_ruido',
+  },
+  gate_inverter_ruido: {
+    id: 'gate_inverter_ruido', type: 'question',
+    text: '¿El compresor del equipo es tecnología Inverter?',
+    detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
+    tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
+    options: [
+      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'No, es compresor convencional', nextId: 'result_compresor_ruido', color: 'success' },
+    ],
   },
   result_compresor_ruido: {
     id: 'result_compresor_ruido', type: 'result',
@@ -715,6 +677,8 @@ const RUIDOEXCESIVO: DiagnosticTree = {
       parts: ['Soportes de compresor'],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_ruido)
+  ...INVERTER_TREE,
 };
 
 // ─── "No enciende" arbol generico ───────────────────────────────────────────────
@@ -750,7 +714,17 @@ const NOENCIENDE: DiagnosticTree = {
     id: 'ev_voltaje', type: 'evidence',
     text: 'Registrar voltaje medido en toma',
     evidenceLabel: 'Foto del multímetro con voltaje',
-    nextId: 'revisar_cable',
+    nextId: 'gate_inverter_noenciende',
+  },
+  gate_inverter_noenciende: {
+    id: 'gate_inverter_noenciende', type: 'question',
+    text: '¿El compresor del equipo es tecnología Inverter?',
+    detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
+    tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
+    options: [
+      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'No, es compresor convencional', nextId: 'revisar_cable', color: 'success' },
+    ],
   },
   revisar_cable: {
     id: 'revisar_cable', type: 'measure',
@@ -791,6 +765,8 @@ const NOENCIENDE: DiagnosticTree = {
       parts: ['Tarjeta de control', 'Display / panel'],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_noenciende)
+  ...INVERTER_TREE,
 };
 
 // ─── "No centrifuga" washer tree ─────────────────────────────────────────────
@@ -1092,7 +1068,17 @@ const NOENFRIA_AIRE: DiagnosticTree = {
     id: 'ev_presiones_aire', type: 'evidence',
     text: 'Medir y registrar presiones del sistema AC',
     evidenceLabel: 'Foto de manómetros en el AC',
-    nextId: 'presion_baja_aire',
+    nextId: 'gate_inverter_aire',
+  },
+  gate_inverter_aire: {
+    id: 'gate_inverter_aire', type: 'question',
+    text: '¿El compresor del equipo es tecnología Inverter?',
+    detail: 'La mayoría de los aires acondicionados modernos son inverter. Los compresores Inverter no usan capacitor de arranque ni relé: los alimenta un módulo driver (tarjeta inverter).',
+    tip: 'Indicios de Inverter: módulo electrónico grande en la unidad exterior, sin capacitor de compresor visible y frecuencia variable audible al operar.',
+    options: [
+      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'No, es compresor convencional (on/off)', nextId: 'presion_baja_aire', color: 'success' },
+    ],
   },
   presion_baja_aire: {
     id: 'presion_baja_aire', type: 'question',
@@ -1128,6 +1114,8 @@ const NOENFRIA_AIRE: DiagnosticTree = {
       parts: ['Filtros de aire'],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_aire)
+  ...INVERTER_TREE,
 };
   const AIRE_E5_IPM: DiagnosticTree = {
   start: {
@@ -1744,7 +1732,17 @@ const NOSECA: DiagnosticTree = {
     text: 'Medir continuidad del motor de la secadora y revisar la correa del tambor',
     detail: 'La mayoría de secadoras usan correa (belt) para mover el tambor. Inspeccionar visualmente si la correa está rota, desgastada o fuera de lugar. Medir continuidad de los devanados del motor.',
     tip: 'Un motor sin correa gira sin carga y hace un zumbido corto — la correa rota es la causa más común de tambor parado.',
-    nextId: 'result_motor_secadora',
+    nextId: 'gate_inverter_secadora',
+  },
+  gate_inverter_secadora: {
+    id: 'gate_inverter_secadora', type: 'question',
+    text: '¿El compresor del equipo es tecnología Inverter?',
+    detail: 'Algunas secadoras premium y lavadoras-secadoras usan compresor inverter en su bomba de calor. Verifica la placa o el manual del equipo.',
+    tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor y frecuencia variable audible al operar.',
+    options: [
+      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'No, es compresor convencional', nextId: 'result_motor_secadora', color: 'success' },
+    ],
   },
   result_motor_secadora: {
     id: 'result_motor_secadora', type: 'result',
@@ -1853,6 +1851,8 @@ const NOSECA: DiagnosticTree = {
       parts: ['Blower wheel / ventilador de circulación', 'Motor del ventilador'],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_secadora)
+  ...INVERTER_TREE,
 };
 
 // ─── "Escarcha excesiva" tree ─────────────────────────────────────────────────
@@ -1912,6 +1912,8 @@ const ESCARCHA: DiagnosticTree = {
       parts: ['Empaque de puerta'],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_secadora)
+  ...INVERTER_TREE,
 };
 
 // ─── "Congela pero no enfría" — flujo de distribución de aire e inverter ────────
@@ -1930,47 +1932,8 @@ const CONGELA_NOENFRIA: DiagnosticTree = {
     text: '¿El equipo usa compresor Inverter?',
     detail: 'Las comprobaciones del módulo Inverter aparecen aquí después de las etapas iniciales obligatorias de voltaje y código de error.',
     options: [
-      { label: 'Sí, es Inverter', nextId: 'inverter_ev_placa_congela', color: 'neutral' },
+      { label: 'Sí, es Inverter', nextId: 'inv_start', color: 'neutral' },
       { label: 'No, es convencional', nextId: 'ev_ventilador_congela', color: 'success' },
-    ],
-  },
-  inverter_ev_placa_congela: {
-    id: 'inverter_ev_placa_congela', type: 'evidence',
-    text: 'Registrar placa del compresor y módulo Inverter',
-    detail: 'Toma una foto legible de la referencia del compresor, del módulo Inverter y de cualquier LED o indicación visible. Esta evidencia permite solicitar el repuesto correcto.',
-    evidenceLabel: 'Foto de placa del compresor y módulo Inverter',
-    nextId: 'inverter_estado_congela',
-  },
-  inverter_estado_congela: {
-    id: 'inverter_estado_congela', type: 'question',
-    text: '¿El módulo Inverter muestra una falla o el código de error registrado?',
-    detail: 'Relaciona esta observación con el código que ya se revisó en el paso previo. No sustituyas el módulo sin comprobar alimentación, comunicación y compresor.',
-    options: [
-      { label: 'Sí, muestra falla o no responde', nextId: 'inverter_ev_falla_congela', color: 'danger' },
-      { label: 'No, no muestra falla visible', nextId: 'inverter_medir_senal_congela', color: 'neutral' },
-    ],
-  },
-  inverter_ev_falla_congela: {
-    id: 'inverter_ev_falla_congela', type: 'evidence',
-    text: 'Documentar la falla del módulo Inverter',
-    detail: 'Fotografía el código, el patrón de destellos o el estado del LED. Registra también la referencia del módulo y la tensión medida en su alimentación.',
-    evidenceLabel: 'Foto del módulo Inverter mostrando código o LED de falla',
-    nextId: 'result_modulo_congela',
-  },
-  inverter_medir_senal_congela: {
-    id: 'inverter_medir_senal_congela', type: 'measure',
-    text: 'Medir señal del módulo Inverter hacia el compresor',
-    detail: 'Con el equipo operando, mide la señal entre U-V, U-W y V-W. Los tres valores deben ser similares según el modelo. Trabaja solo con el procedimiento y protección indicados por el fabricante.',
-    tip: 'Una señal desbalanceada apunta al módulo; señales balanceadas con compresor detenido orientan a compresor o control de velocidad.',
-    gifUri: 'medir-señal-inverter',
-    nextId: 'inverter_senal_congela',
-  },
-  inverter_senal_congela: {
-    id: 'inverter_senal_congela', type: 'question',
-    text: '¿La señal U-V / U-W / V-W está balanceada?',
-    options: [
-      { label: 'No, hay un terminal en 0 o muy diferente', nextId: 'result_modulo_congela', color: 'danger' },
-      { label: 'Sí, los valores son similares', nextId: 'ev_ventilador_congela', color: 'success' },
     ],
   },
   ev_ventilador_congela: {
@@ -2014,19 +1977,6 @@ const CONGELA_NOENFRIA: DiagnosticTree = {
       parts: [],
     },
   },
-  result_modulo_congela: {
-    id: 'result_modulo_congela', type: 'result',
-    text: 'Revisar módulo Inverter y comunicación',
-    result: {
-      causes: [
-        { cause: 'Módulo Inverter con falla en la etapa de salida', probability: 55 },
-        { cause: 'Comunicación deficiente entre tarjeta y módulo Inverter', probability: 25 },
-        { cause: 'Alimentación inestable o fuera de especificación', probability: 20 },
-      ],
-      recommendation: 'Confirmar alimentación, conectores y comunicación según el manual. Si la señal está desbalanceada o el código confirma la falla, solicitar módulo Inverter con la referencia exacta. Verificar el compresor antes de instalarlo.',
-      parts: ['Módulo Inverter / Driver', 'Tarjeta de control'],
-    },
-  },
   result_ventilador_congela: {
     id: 'result_ventilador_congela', type: 'result',
     text: 'Falla en ventilador o circulación de aire',
@@ -2066,6 +2016,8 @@ const CONGELA_NOENFRIA: DiagnosticTree = {
       parts: ['Sensor NTC de refrigeración', 'Tarjeta de control'],
     },
   },
+  // Nodos de tecnología Inverter compartidos (se alcanzan vía tipo_compresor_congela)
+  ...INVERTER_TREE,
 };
 
 // ─── Export all trees ──────────────────────────────────────────────────────────
@@ -2087,6 +2039,7 @@ export const DECISION_TREES: Record<string, DiagnosticTree> = {
   noseca:                   NOSECA,
   congela_noenfria:         CONGELA_NOENFRIA,
   ...AIR_ERROR_TREES,
+  ...NEVERA_CODE_TREES,
 };
 
 export function getTree(treeId: string): DiagnosticTree {

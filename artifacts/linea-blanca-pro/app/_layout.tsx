@@ -5,6 +5,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { DiagnosticoProvider } from '@/contexts/DiagnosticoContext';
+import { useOTAUpdates } from '@/hooks/useOTAUpdates';
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -36,6 +37,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  useOTAUpdates();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,

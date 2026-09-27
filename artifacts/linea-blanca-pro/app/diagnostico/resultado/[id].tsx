@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
@@ -188,6 +188,18 @@ export default function ResultadoScreen() {
             {sharing ? 'Preparando DOCX...' : 'Compartir reporte DOCX'}
           </Text>
         </TouchableOpacity>
+
+        {/* Home button */}
+        <TouchableOpacity
+          onPress={() => router.replace('/(tabs)')}
+          activeOpacity={0.75}
+          style={[styles.homeFullBtn, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}
+        >
+          <Feather name="home" size={18} color={c.primary} />
+          <Text style={[styles.homeFullBtnText, { color: c.primary }]}>
+            Volver a la pantalla inicial
+          </Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -346,6 +358,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   shareFullBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),
+  },
+  homeFullBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 16,
+    marginTop: 2,
+    borderWidth: 1,
+  },
+  homeFullBtnText: {
     fontSize: 15,
     fontWeight: '600',
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),

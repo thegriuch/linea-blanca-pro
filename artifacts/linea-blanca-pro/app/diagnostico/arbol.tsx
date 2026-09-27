@@ -22,6 +22,7 @@ import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { getNode } from '@/constants/arboles';
 import { getAirErrorTreeId } from '@/constants/aires_arboles';
+import { getCodigoTreeId } from '@/constants/codigos_arboles';
 import { getCodigosError, type CodigoError } from '@/constants/codigos_error';
 import { GIFS, getGifUri } from '@/constants/gifs';
 import type { TreeNode } from '@/types/diagnostico';
@@ -88,6 +89,8 @@ export default function ArbolScreen() {
   // ETAPA 2 — Árbol de diagnóstico
   const [evidenceUri, setEvidenceUri] = useState<string | null>(null);
   const [hiddenGifKey, setHiddenGifKey] = useState<string | null>(null);
+  // ETAPA 3 — Evidencia final de la falla (antes del informe de probabilidades)
+  const [finalEvidenceUri, setFinalEvidenceUri] = useState<string | null>(null);
 
   if (!currentSession) {
     router.replace('/diagnostico/nuevo');
@@ -109,7 +112,8 @@ export default function ArbolScreen() {
     );
   }, [codigos, busqueda]);
 
-  // Cuando llegamos a un nodo result, guardamos y vamos a conclusión
+  // Cuando llegamos a un nodo result, guardamos el resultado y abrimos la cámara
+  // para registrar la evidencia final de la falla antes de mostrar las probabilidades.
   useEffect(() => {
     if (voltajeListo && errorListo && node.type === 'result' && node.result) {
       setResult({
@@ -117,7 +121,7 @@ export default function ArbolScreen() {
         recommendation: node.result.recommendation,
         parts:          node.result.parts ?? [],
       });
-      router.push('/diagnostico/conclusion');
+      void handleCaptureFinal();
     }
   }, [node.id, voltajeListo, errorListo]);
 
@@ -182,10 +186,29 @@ export default function ArbolScreen() {
     });
   };
 
+  // Evidencia final: foto de la falla encontrada antes del informe de probabilidades
+  const handleCaptureFinal = async () => {
+    await capturePhoto((uri) => {
+      setFinalEvidenceUri(uri);
+      addEvidence({
+        uri,
+        nodeId: node.id,
+        nodeText: `Evidencia final de la falla${equipo.fallaLabel ? ` · ${equipo.fallaLabel}` : ''}`,
+      });
+    });
+  };
+
+  const handleFinalContinue = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/diagnostico/conclusion');
+  };
+
   // Usar código de error como resultado final
   const iniciarArbolConCodigo = () => {
     if (!codigoSel) return;
-    const codeTreeId = equipo.tipo === 'aire' ? getAirErrorTreeId(codigoSel.codigo) : undefined;
+    const codeTreeId = equipo.tipo === 'aire'
+      ? getAirErrorTreeId(codigoSel.codigo)
+      : getCodigoTreeId(equipo.tipo, codigoSel.codigo);
     if (codeTreeId) {
       setEquipo({
         ...equipo,
@@ -224,12 +247,11 @@ export default function ArbolScreen() {
       }
     goBackNode();
     setEvidenceUri(null);
+    setFinalEvidenceUri(null);
   };
 
   const stepsTotal = path.length + (voltajeListo ? 1 : 0) + (errorListo ? 1 : 0);
   const progressPct: `${number}%` = `${Math.min(100, Math.max(4, stepsTotal * 7))}%`;
-
-  if (node.type === 'result' && voltajeListo && errorListo) return null;
 
   // ══════════════════════════════════════════════════════════════════════════
   // ETAPA 0 — Voltaje
@@ -540,6 +562,68 @@ export default function ArbolScreen() {
         </ScrollView>
       );
     }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ETAPA 3 — Evidencia final de la falla (antes del informe de probabilidades)
+  // ══════════════════════════════════════════════════════════════════════════
+  if (node.type === 'result' && node.result) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: c.background }}
+        contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 40 }}
+      >
+        <View style={[styles.progressRow, { backgroundColor: c.muted, borderRadius: 6 }]}>
+          <View style={[styles.progressFill, { backgroundColor: c.success, width: '95%', borderRadius: 6 }]} />
+        </View>
+        <Text style={[styles.progressLabel, { color: c.mutedForeground }]}>Diagnóstico completado · Evidencia final</Text>
+
+        <View style={[styles.typeBadge, { backgroundColor: c.success + '18', borderRadius: 8 }]}>
+          <Feather name="camera" size={14} color={c.success} />
+          <Text style={[styles.typeBadgeText, { color: c.success }]}>REGISTRO DE EVIDENCIA</Text>
+        </View>
+
+        <View style={[styles.nodeCard, { backgroundColor: c.card, borderColor: c.success, borderRadius: colors.radius }]}>
+          <Text style={[styles.nodeText, { color: c.foreground }]}>
+            Documenta la falla encontrada
+          </Text>
+          <Text style={[styles.nodeDetail, { color: c.mutedForeground }]}>
+            Toma una foto de la evidencia del diagnóstico: la falla identificada, la medición o el componente afectado.
+            Esta imagen quedará adjunta al reporte junto con las probabilidades de causa.
+          </Text>
+        </View>
+
+        <View style={styles.evidenceSection}>
+          {finalEvidenceUri && (
+            <View style={styles.evidencePreview}>
+              <Image source={{ uri: finalEvidenceUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
+              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
+                <Feather name="check" size={14} color={c.successForeground} />
+              </View>
+            </View>
+          )}
+          <TouchableOpacity
+            onPress={handleCaptureFinal}
+            activeOpacity={0.75}
+            style={[styles.captureBtn, { backgroundColor: '#7C3AED18', borderColor: '#7C3AED', borderRadius: colors.radius }]}
+          >
+            <Feather name="camera" size={20} color="#7C3AED" />
+            <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
+              {finalEvidenceUri ? 'Tomar otra foto' : 'Abrir cámara'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <PrimaryButton
+          label={finalEvidenceUri ? 'Continuar al informe de probabilidades' : 'Continuar sin foto al informe'}
+          icon="arrow-right"
+          onPress={handleFinalContinue}
+        />
+        <View style={{ marginTop: 12 }}>
+          <PrimaryButton label="Volver al árbol" variant="outline" onPress={handleBack} />
+        </View>
+      </ScrollView>
+    );
   }
 
   // ══════════════════════════════════════════════════════════════════════════

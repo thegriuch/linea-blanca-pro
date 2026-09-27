@@ -751,8 +751,8 @@ const CONGELADOR: CodigoError[] = [
       'Medicion de entrada de voltaje menor a 109V (Para productos  funcionales a 120V) o 198V (Para productos  funcionales a 220V)',
       'Baja corriente, por novedades en las instalaciones electricas del sitio',
     ],
-    solucion: 'Localizar el sensor ambiental (generalmente en la parte superior del gabinete o en el panel de control). Medir resistencia a temperatura ambiente. Reemplazar si está fuera de especificación.',
-    partes: ['Sensor NTC ambiental'],
+    solucion: 'Medir el voltaje de entrada en la toma con el equipo conectado. Si es inferior a 109 V (equipos de 120 V) o 198 V (equipos de 220 V), la falla es de la instalación eléctrica del sitio, no del equipo: documentar la medición y escalar al electricista. Si el voltaje es correcto y el código persiste, revisar la placa inversora.',
+    partes: ['Ninguno (instalación eléctrica del sitio)'],
   },
   {
 
@@ -894,6 +894,15 @@ const DISPENSADORES: CodigoError[] = NEVERA;
 const NEVECON: CodigoError[] = NEVERA;
 const MINIBAR: CodigoError[] = NEVERA;
 
+// La lavadora comparte con la secadora la serie E de temperatura/resistencia
+// (E34–E38, E3A, E33) y de motor inverter/comunicación (E50, E58, E60–E64, E80),
+// según los diagramas de flujo. Se derivan de la tabla de secadora excluyendo
+// los códigos de agua/ carga que la lavadora ya tiene con su propia numeración.
+const CODIGOS_MOTOR_TEMP_LAVADO: CodigoError[] = SECADORA.filter(
+  (c) => !['E10', 'E12', 'E21', 'E40', 'E30', 'E33'].includes(c.codigo.split(',')[0].trim()),
+);
+const LAVADORA_COMPLETA: CodigoError[] = [...LAVADORA, ...CODIGOS_MOTOR_TEMP_LAVADO];
+
 // ── VITRINAS ──────────────────────────────────────────────────────────────────
 const VITRINA: CodigoError[] = CONGELADOR;
 
@@ -903,7 +912,7 @@ export const CODIGOS_POR_EQUIPO: Record<EquipoTipo, CodigoError[]> = {
   congelador:    CONGELADOR,
   nevecon:       NEVECON,
   minibar:       MINIBAR,
-  lavadora:      LAVADORA,
+  lavadora:      LAVADORA_COMPLETA,
   secadora:      SECADORA,
   aire:          AIRE,
   vitrina:       VITRINA,
