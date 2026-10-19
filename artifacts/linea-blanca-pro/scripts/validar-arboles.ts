@@ -1,5 +1,5 @@
 /* Valida que todos los nextId/option.nextId de los árboles apunten a nodos existentes. */
-import { DECISION_TREES } from '../constants/arboles';
+import { DECISION_TREES } from '../constants/arboles_index';
 
 let errors = 0;
 

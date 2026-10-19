@@ -13,6 +13,7 @@ import {
 import { Platform } from 'react-native';
 import type { DiagnosticSession, Evidence } from '@/types/diagnostico';
 import { getEquipoInfo } from '@/constants/equipos';
+import { getIrisPorCodigo, getIrisParaRepuesto, getIrisGenerico } from '@/constants/iris';
 import { LETTERHEAD_ICON_DATA_URI } from '@/utils/letterheadIcon';
 
 const DOCX_MIME =
@@ -79,7 +80,10 @@ export function buildReportText(session: DiagnosticSession): string {
     }
     if (session.result?.parts && session.result.parts.length > 0) {
       lines.push('REPUESTOS POSIBLES:');
-      session.result.parts.forEach((p) => lines.push(`  • ${p}`));
+      session.result.parts.forEach((p) => {
+        const iris = getIrisParaRepuesto(session.equipo.tipo, p) ?? getIrisGenerico(session.equipo.tipo, p);
+        lines.push(iris ? `  • ${p} (IRIS ${iris.codigo})` : `  • ${p}`);
+      });
       lines.push('');
     }
   }
@@ -98,6 +102,31 @@ export function buildReportText(session: DiagnosticSession): string {
   if (session.conclusion.observaciones) {
     lines.push(`OBSERVACIONES: ${session.conclusion.observaciones}`);
   }
+
+  // Códigos IRIS: los seleccionados + los de los repuestos sugeridos por el árbol
+  const codigosIris: string[] = [...(session.conclusion.codigosIris ?? [])];
+  for (const parte of session.result?.parts ?? []) {
+    const irisParte = getIrisParaRepuesto(session.equipo.tipo, parte) ?? getIrisGenerico(session.equipo.tipo, parte);
+    if (irisParte && !codigosIris.includes(irisParte.codigo)) codigosIris.push(irisParte.codigo);
+  }
+  if (codigosIris.length > 0) {
+    lines.push('── CÓDIGOS IRIS · REPUESTO A CAMBIAR ───');
+    for (const codigo of codigosIris) {
+      const iris = getIrisPorCodigo(codigo);
+      if (iris) {
+        lines.push(`  ${iris.codigo}`);
+        lines.push(`     Falla: ${iris.falla}`);
+        lines.push(`     Falla principal: ${iris.fallaPrincipal}`);
+        lines.push(`     Repuesto a cambiar: ${iris.repuesto}`);
+        lines.push(`     Tipo de solución: ${iris.tipoSolucion}`);
+        lines.push(`     Sublínea: ${iris.sublinea}`);
+      } else {
+        lines.push(`  ${codigo}`);
+      }
+    }
+    lines.push('');
+  }
+
   if (session.evidence.length > 0) {
     lines.push('');
     lines.push(`EVIDENCIAS: ${session.evidence.length} foto(s) adjunta(s)`);
@@ -299,10 +328,16 @@ async function buildDocx(session: DiagnosticSession): Promise<Document> {
     if (session.result?.parts?.length) {
       children.push(heading('Repuestos posibles'));
       session.result.parts.forEach((part) => {
+        const iris = getIrisParaRepuesto(session.equipo.tipo, part) ?? getIrisGenerico(session.equipo.tipo, part);
         children.push(
           new Paragraph({
             bullet: { level: 0 },
-            children: [new TextRun({ text: part })],
+            children: [
+              new TextRun({ text: part }),
+              ...(iris
+                ? [new TextRun({ text: `  — IRIS ${iris.codigo}`, bold: true, color: REPORT_BLUE })]
+                : []),
+            ],
           }),
         );
       });
@@ -314,6 +349,65 @@ async function buildDocx(session: DiagnosticSession): Promise<Document> {
   children.push(field('Repuestos solicitados', session.conclusion.repuestos));
   children.push(field('Tiempo estimado de reparación', session.conclusion.tiempoEstimado));
   children.push(field('Observaciones', session.conclusion.observaciones));
+
+  // Códigos IRIS: los seleccionados + los de los repuestos sugeridos por el árbol
+  const codigosIris: string[] = [...(session.conclusion.codigosIris ?? [])];
+  for (const parte of session.result?.parts ?? []) {
+    const irisParte = getIrisParaRepuesto(session.equipo.tipo, parte) ?? getIrisGenerico(session.equipo.tipo, parte);
+    if (irisParte && !codigosIris.includes(irisParte.codigo)) codigosIris.push(irisParte.codigo);
+  }
+  if (codigosIris.length > 0) {
+    children.push(heading('Códigos IRIS · Repuesto a cambiar'));
+    for (const codigo of codigosIris) {
+      const iris = getIrisPorCodigo(codigo);
+      if (iris) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 120, after: 40 },
+            children: [
+              new TextRun({ text: iris.codigo, bold: true, color: REPORT_BLUE }),
+              new TextRun({ text: `  —  ${iris.falla}`, color: '222222' }),
+            ],
+          }),
+        );
+        children.push(
+          new Paragraph({
+            bullet: { level: 0 },
+            spacing: { after: 20 },
+            children: [new TextRun({ text: `Falla principal: ${iris.fallaPrincipal}`, color: '222222' })],
+          }),
+        );
+        children.push(
+          new Paragraph({
+            bullet: { level: 0 },
+            spacing: { after: 20 },
+            children: [
+              new TextRun({ text: 'Repuesto a cambiar: ', color: '222222' }),
+              new TextRun({ text: iris.repuesto, bold: true, color: '222222' }),
+            ],
+          }),
+        );
+        children.push(
+          new Paragraph({
+            bullet: { level: 0 },
+            spacing: { after: 100 },
+            children: [
+              new TextRun({ text: `Tipo de solución: ${iris.tipoSolucion}`, color: '222222' }),
+              new TextRun({ text: `  ·  Sublínea: ${iris.sublinea}`, color: REPORT_GRAY }),
+            ],
+          }),
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            bullet: { level: 0 },
+            spacing: { after: 60 },
+            children: [new TextRun({ text: codigo })],
+          }),
+        );
+      }
+    }
+  }
 
   if (session.evidence.length > 0) {
     children.push(new Paragraph({ children: [new PageBreak()] }));

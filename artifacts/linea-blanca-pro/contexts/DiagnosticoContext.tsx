@@ -56,16 +56,30 @@ function emptyCliente(): ClienteInfo {
 }
 
 function emptyConclusion(): ConclusionInfo {
-  return { diagnostico: '', repuestos: '', tiempoEstimado: '', observaciones: '' };
+  return { diagnostico: '', repuestos: '', tiempoEstimado: '', observaciones: '', codigosIris: [] };
 }
 
+// normalizeSession solo reparaba `evidence`: una sesión guardada por una versión
+// anterior de la app sin `codigosIris` (u otro campo nuevo) crasheaba la pantalla
+// de probabilidades al leer campos undefined. Repara todas las partes.
 function normalizeSession(session: DiagnosticSession): DiagnosticSession {
   return {
     ...session,
+    cliente: { ...emptyCliente(), ...(session.cliente ?? {}) },
+    equipo: { ...session.equipo, fallaId: session.equipo?.fallaId ?? '', fallaLabel: session.equipo?.fallaLabel ?? '' },
+    path: session.path ?? [],
+    pathAnswers: session.pathAnswers ?? {},
     evidence: (session.evidence ?? []).map((evidence) => ({
       ...evidence,
       diagnosticId: evidence.diagnosticId ?? session.id,
     })),
+    conclusion: {
+      ...emptyConclusion(),
+      ...(session.conclusion ?? {}),
+      codigosIris: Array.isArray(session.conclusion?.codigosIris)
+        ? session.conclusion.codigosIris
+        : [],
+    },
   };
 }
 

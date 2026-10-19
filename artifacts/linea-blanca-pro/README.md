@@ -142,3 +142,17 @@ linea-blanca-pro/          ← este repositorio (monorepo pnpm)
 ##  Licencia
 
 Uso interno / privado. Todos los derechos reservados al area de soporte tecnico
+
+
+## UPDATE FOTA
+
+# 1. Entra a la carpeta de la app
+cd "C:\Users\USUARIO\Desktop\Linea blanca pro apk\artifacts\linea-blanca-pro"
+
+# 2. (Opcional) Verifica qué vas a publicar
+npx eas-cli@latest update:configure --help   # referencia, no es obligatorio
+
+# 3. Publica el update en el canal preview
+npx eas-cli@latest update --branch preview -m "Consulta de tabla NTC desde los arboles"
+
+# 4. Copia el "Update group ID" que te devuelve (lo necesitas si quieres revertir)

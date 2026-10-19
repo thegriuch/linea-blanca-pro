@@ -2,9 +2,10 @@ import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { DocIcon } from '@/components/DocIcon';
 
 interface Props {
-  icon: keyof typeof Feather.glyphMap;
+  icon: keyof typeof Feather.glyphMap | 'doc';
   title: string;
   description?: string;
   action?: { label: string; onPress: () => void };
@@ -15,7 +16,11 @@ export function EmptyState({ icon, title, description, action }: Props) {
   return (
     <View style={styles.container}>
       <View style={[styles.iconWrap, { backgroundColor: colors.muted, borderRadius: 40 }]}>
-        <Feather name={icon} size={36} color={colors.mutedForeground} />
+        {icon === 'doc' ? (
+          <DocIcon size={36} color={colors.mutedForeground} />
+        ) : (
+          <Feather name={icon} size={36} color={colors.mutedForeground} />
+        )}
       </View>
       <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
       {description && (

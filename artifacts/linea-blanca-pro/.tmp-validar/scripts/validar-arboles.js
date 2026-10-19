@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /* Valida que todos los nextId/option.nextId de los árboles apunten a nodos existentes. */
-const arboles_1 = require("../constants/arboles");
+const arboles_index_1 = require("../constants/arboles_index");
 let errors = 0;
-for (const [treeId, tree] of Object.entries(arboles_1.DECISION_TREES)) {
+for (const [treeId, tree] of Object.entries(arboles_index_1.DECISION_TREES)) {
     for (const node of Object.values(tree)) {
         const refs = [];
         if (node.nextId)

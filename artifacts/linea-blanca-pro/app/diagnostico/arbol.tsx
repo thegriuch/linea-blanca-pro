@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { getNode } from '@/constants/arboles';
+import { getNode } from '@/constants/arboles_index';
 import { getAirErrorTreeId } from '@/constants/aires_arboles';
 import { getCodigoTreeId } from '@/constants/codigos_arboles';
 import { getCodigosError, type CodigoError } from '@/constants/codigos_error';
@@ -63,6 +63,26 @@ const VOLTAJE_NODE: TreeNode = {
   nextId:        'start',
 };
 
+// ── Nodo sintético de amperaje ───────────────────────────────────────────────
+const AMPERAJE_NODE: TreeNode = {
+  id:            '__ev_amperaje__',
+  type:          'evidence',
+  text:          'Medir el amperaje de consumo del equipo',
+  detail:        'Con pinza amperimétrica, mide el amperaje del compresor (o motor principal) durante el intento de arranque o funcionamiento. Compara con el valor RLA de la placa del equipo.',
+  tip:           'Consumo muy bajo (<1 A) puede indicar que el compresor casi no trabaja. Consumo alto o por encima del RLA indica sobreesfuerzo o corto. Documenta siempre esta medición.',
+  evidenceLabel: 'Foto del amperaje medido con la pinza (pinza + display)',
+};
+
+// ── Nodo sintético: voltaje en la salida de la tarjeta Inverter ──────────────
+const SALIDA_INVERTER_NODE: TreeNode = {
+  id:            '__ev_salida_inverter__',
+  type:          'evidence',
+  text:          'Medir el voltaje en la salida de la tarjeta Inverter (U, V, W)',
+  detail:        'Con el equipo en marcha (o en intento de arranque), mide el voltaje entre las fases U-V, U-W y V-W en la salida del módulo hacia el compresor. En arranque típico se esperan más de 80 V y con el compresor estable el voltaje debe mantenerse en el rango de la placa (60–230 V según fabricante). Un valor de 0 V entre fases indica tarjeta inverter sin salida o compresor bloqueado.',
+  tip:           'Si el voltaje de salida es normal pero el compresor no arranca, la falla apunta al compresor. Si no hay voltaje de salida, verifica alimentación y señales de la tarjeta antes de condenarla. Documenta siempre esta medición como evidencia.',
+  evidenceLabel: 'Foto del voltaje medido en la salida de la tarjeta Inverter (multímetro + terminales U, V, W)',
+};
+
 // ══════════════════════════════════════════════════════════════════════════════
 export default function ArbolScreen() {
   const c = useColors();
@@ -78,11 +98,21 @@ export default function ArbolScreen() {
   } = useDiagnostico();
 
   // ── Etapas del flujo ────────────────────────────────────────────────────
-  // ETAPA 0 — Voltaje
+  // ETAPA 0 — Voltaje y amperaje (obligatorias en todos los diagnósticos)
   const [voltajeListo, setVoltajeListo] = useState(false);
   const [voltajeUri, setVoltajeUri] = useState<string | null>(null);
-  // ETAPA 1 — Verificación de código de error
+  const [amperajeListo, setAmperajeListo] = useState(false);
+  const [amperajeUri, setAmperajeUri] = useState<string | null>(null);
+  // ETAPA 0b — ¿Es tecnología Inverter? (siempre, tras voltaje y amperaje)
+  const [inverterListo, setInverterListo] = useState(false);
+  const [esInverter, setEsInverter] = useState<boolean | null>(null);
+  // ETAPA 0d — Toma de voltaje en la salida de la tarjeta Inverter (solo si es Inverter)
+  const [salidaListo, setSalidaListo] = useState(false);
+  const [salidaUri, setSalidaUri] = useState<string | null>(null);
+  // ETAPA 1 — Verificación de código de error (solo si es Inverter)
   const [errorListo, setErrorListo] = useState(false);
+  // Modo directo a código: la falla seleccionada en el menú es 'Validación de código de error'
+  const [equipoFalla, setEquipoFalla] = useState(currentSession?.equipo.fallaId ?? '');
   const [tieneError, setTieneError] = useState<boolean | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [codigoSel, setCodigoSel] = useState<CodigoError | null>(null);
@@ -115,7 +145,7 @@ export default function ArbolScreen() {
   // Cuando llegamos a un nodo result, guardamos el resultado y abrimos la cámara
   // para registrar la evidencia final de la falla antes de mostrar las probabilidades.
   useEffect(() => {
-    if (voltajeListo && errorListo && node.type === 'result' && node.result) {
+    if (voltajeListo && amperajeListo && inverterListo && (esInverter === false || salidaListo) && node.type === 'result' && node.result) {
       setResult({
         causes:         node.result.causes,
         recommendation: node.result.recommendation,
@@ -123,13 +153,47 @@ export default function ArbolScreen() {
       });
       void handleCaptureFinal();
     }
-  }, [node.id, voltajeListo, errorListo]);
+  }, [node.id, voltajeListo, amperajeListo, inverterListo, esInverter, salidaListo, errorListo]);
 
   const nodeColor = NODE_TYPE_COLOR[node.type] ?? c.primary;
-  const gifKey = !voltajeListo ? 'medir-voltaje' : node.gifUri;
+  const gifKey = !voltajeListo
+    ? 'medir-voltaje'
+    : !amperajeListo
+      ? 'medir-amperaje'
+      : inverterListo && esInverter && !salidaListo
+        ? 'medir-senal-inverter'
+        : node.gifUri;
   const gifUri = getGifUri(gifKey);
   const gifLabel = GIFS.find((gif) => gif.key === gifKey)?.label;
   const gifVisible = Boolean(gifUri && hiddenGifKey !== gifKey);
+
+  // Al cambiar de nodo, volver a mostrar la guía: si no se resetea, ocultar
+  // un GIF lo deja oculto también en las pantallas siguientes que usen
+  // el mismo recurso (parecería que la guía "no carga").
+  useEffect(() => {
+    setHiddenGifKey(null);
+  }, [node.id]);
+
+  // GATE AUTOMÁTICO: si el nodo tiene 'gate' y la app ya conoce la respuesta
+  // (el técnico indicó la tecnología en el flujo inicial, o ya validó el
+  // código de error), se salta la pregunta repetida y avanza por la rama
+  // correspondiente registrándola en el historial como respuesta automática.
+  // gatesSaltados permite volver atrás sin que el gate re-dispare en bucle.
+  const gatesSaltados = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (node.type !== 'question' || !node.gate) return;
+    if (gatesSaltados.current.has(node.id)) return;
+    const etiqueta = node.gate === 'inverter_si'
+      ? (esInverter ? 'Sí' : esInverter === false ? 'No' : null)
+      : node.gate === 'codigo_si' ? (tieneError ? 'Sí' : null)
+      : null;
+    if (!etiqueta) return;
+    const opt = node.options?.find((o) => o.label.toLowerCase().startsWith(etiqueta.toLowerCase()));
+    if (!opt) return;
+    gatesSaltados.current.add(node.id);
+    advanceNode(opt.nextId, `${opt.label} (auto)`);
+    setEvidenceUri(null);
+  }, [node.id, node.gate, esInverter, tieneError]);
 
   const toggleGif = () => {
     if (!gifKey || !gifUri) return;
@@ -171,6 +235,29 @@ export default function ArbolScreen() {
         uri,
         nodeId: '__ev_voltaje__',
         nodeText: VOLTAJE_NODE.evidenceLabel || VOLTAJE_NODE.text,
+      });
+    });
+  };
+
+  const handleCaptureAmperaje = async () => {
+    await capturePhoto((uri) => {
+      setAmperajeUri(uri);
+      addEvidence({
+        uri,
+        nodeId: '__ev_amperaje__',
+        nodeText: AMPERAJE_NODE.evidenceLabel || AMPERAJE_NODE.text,
+      });
+    });
+  };
+
+  // Evidencia del voltaje en la salida de la tarjeta Inverter (U, V, W)
+  const handleCaptureSalida = async () => {
+    await capturePhoto((uri) => {
+      setSalidaUri(uri);
+      addEvidence({
+        uri,
+        nodeId: '__ev_salida_inverter__',
+        nodeText: SALIDA_INVERTER_NODE.evidenceLabel || SALIDA_INVERTER_NODE.text,
       });
     });
   };
@@ -230,19 +317,34 @@ export default function ArbolScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // Etapa 0: voltaje
     if (!voltajeListo) { router.back(); return; }
-    // Etapa 1: verificación de error
+    // Etapa 0b: amperaje
+    if (!amperajeListo) { setVoltajeListo(false); return; }
+    // Etapa 0c: pregunta inverter
+    if (!inverterListo) { setAmperajeListo(false); return; }
+    // Etapa 0d: toma de voltaje en la salida de la tarjeta Inverter (solo si es Inverter)
+    if (esInverter && !salidaListo) { setInverterListo(false); setEsInverter(null); return; }
+    // Etapa 1: verificación de error (Inverter o acceso directo desde el menú)
     if (!errorListo) {
+      // Modo directo: desde la pantalla 1A se regresa al menú de fallas
+      if (equipoFalla === '__error__') { router.back(); return; }
+      if (!esInverter) { setInverterListo(false); setEsInverter(null); return; }
       if (codigoSel) { setCodigoSel(null); return; }
       if (tieneError !== null) { setTieneError(null); setBusqueda(''); return; }
-      setVoltajeListo(false); return;
-    }
-    // Etapa 2: árbol
+      setSalidaListo(false); setSalidaUri(null); return;
+    }      // Etapa 2: árbol
+      if (path.length === 0 && equipoFalla === '__error__') { router.back(); return; }
       if (path.length === 0) {
         setErrorListo(false);
         setTieneError(null);
         setCodigoSel(null);
         setErrorCode(undefined);
         setBusqueda('');
+        setSalidaListo(false);
+        setSalidaUri(null);
+        setInverterListo(false);
+        setEsInverter(null);
+        setAmperajeListo(false);
+        setAmperajeUri(null);
         return;
       }
     goBackNode();
@@ -250,7 +352,13 @@ export default function ArbolScreen() {
     setFinalEvidenceUri(null);
   };
 
-  const stepsTotal = path.length + (voltajeListo ? 1 : 0) + (errorListo ? 1 : 0);
+  const stepsTotal = path.length
+    + (voltajeListo ? 1 : 0)
+    + (amperajeListo ? 1 : 0)
+    + (inverterListo ? 1 : 0)
+    + (inverterListo && esInverter ? 1 : 0)
+    + (inverterListo && esInverter && tieneError ? 1 : 0)
+    + (errorListo ? 1 : 0);
   const progressPct: `${number}%` = `${Math.min(100, Math.max(4, stepsTotal * 7))}%`;
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -326,11 +434,229 @@ export default function ArbolScreen() {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // ETAPA 1 — Verificación de código de error
+  // ETAPA 0b — Amperaje (obligatoria, después del voltaje)
   // ══════════════════════════════════════════════════════════════════════════
-  if (!errorListo) {
+  if (!amperajeListo) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: c.background }}
+        contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 40 }}
+      >
+        <View style={[styles.progressRow, { backgroundColor: c.muted, borderRadius: 6 }]}>
+          <View style={[styles.progressFill, { backgroundColor: '#7C3AED', width: '8%', borderRadius: 6 }]} />
+        </View>
+        <Text style={[styles.progressLabel, { color: c.mutedForeground }]}>Paso previo · Amperaje eléctrico</Text>
 
-    // 1A — Pregunta inicial: ¿hay código de error?
+        <View style={[styles.typeBadge, { backgroundColor: '#7C3AED18', borderRadius: 8 }]}>
+          <Feather name="activity" size={14} color="#7C3AED" />
+          <Text style={[styles.typeBadgeText, { color: '#7C3AED' }]}>EVIDENCIA INICIAL</Text>
+        </View>
+
+        <View style={[styles.nodeCard, { backgroundColor: c.card, borderColor: '#7C3AED', borderRadius: colors.radius }]}>
+          <Text style={[styles.nodeText, { color: c.foreground }]}>{AMPERAJE_NODE.text}</Text>
+          <Text style={[styles.nodeDetail, { color: c.mutedForeground }]}>{AMPERAJE_NODE.detail}</Text>
+          <View style={[styles.tipBox, { backgroundColor: c.secondary, borderRadius: 10 }]}>
+            <Feather name="info" size={14} color={c.primary} />
+            <Text style={[styles.tipText, { color: c.secondaryForeground }]}>{AMPERAJE_NODE.tip}</Text>
+          </View>
+        </View>
+
+          <GifInstruction
+            uri={gifUri}
+            label={gifLabel}
+            visible={gifVisible}
+            onToggle={toggleGif}
+            colors={c}
+          />
+
+        <View style={styles.evidenceSection}>
+          {amperajeUri && (
+            <View style={styles.evidencePreview}>
+              <Image source={{ uri: amperajeUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
+              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
+                <Feather name="check" size={14} color={c.successForeground} />
+              </View>
+            </View>
+          )}
+          <TouchableOpacity
+            onPress={handleCaptureAmperaje}
+            activeOpacity={0.75}
+            style={[styles.captureBtn, { backgroundColor: '#7C3AED18', borderColor: '#7C3AED', borderRadius: colors.radius }]}
+          >
+            <Feather name="camera" size={20} color="#7C3AED" />
+            <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
+              {amperajeUri ? 'Tomar otra foto' : 'Abrir cámara / galería'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.evidenceLabel, { color: c.mutedForeground }]}>{AMPERAJE_NODE.evidenceLabel}</Text>
+        </View>
+
+        {amperajeUri
+          ? <PrimaryButton label="Guardar amperaje y continuar" icon="arrow-right" onPress={() => setAmperajeListo(true)} />
+          : (
+            <TouchableOpacity onPress={() => setAmperajeListo(true)} style={styles.skipLink}>
+              <Text style={[styles.skipText, { color: c.mutedForeground }]}>Omitir foto de amperaje y continuar</Text>
+            </TouchableOpacity>
+          )}
+        <View style={{ marginTop: 12 }}>
+          <PrimaryButton label="Volver" variant="outline" onPress={handleBack} />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ETAPA 1 DIRECTA — Validación de código de error sin pregunta Inverter
+  // (acceso desde el menú de fallas: fallaId '__error__'). Tras voltaje y
+  // amperaje se salta la pregunta de compresor y la salida Inverter, y entra
+  // directo a la lista de códigos (1B), sin repetir la pregunta 1A.
+  // ══════════════════════════════════════════════════════════════════════
+  if (equipoFalla === '__error__' && !inverterListo) {
+    setInverterListo(true);
+    setEsInverter(false);
+    setTieneError(true);
+    return null;
+  }
+
+  // ETAPA 0c — ¿Es tecnología Inverter? (siempre, tras voltaje y amperaje)
+  // ══════════════════════════════════════════════════════════════════════════
+  if (!inverterListo) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: c.background }}
+        contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 40 }}
+      >
+        <View style={[styles.progressRow, { backgroundColor: c.muted, borderRadius: 6 }]}>
+          <View style={[styles.progressFill, { backgroundColor: '#047857', width: '12%', borderRadius: 6 }]} />
+        </View>
+        <Text style={[styles.progressLabel, { color: c.mutedForeground }]}>Tecnología del compresor</Text>
+
+        <View style={[styles.typeBadge, { backgroundColor: '#04785718', borderRadius: 8 }]}>
+          <Feather name="cpu" size={14} color="#047857" />
+          <Text style={[styles.typeBadgeText, { color: '#047857' }]}>TIPO DE COMPRESOR</Text>
+        </View>
+
+        <View style={[styles.nodeCard, { backgroundColor: c.card, borderColor: '#047857', borderRadius: colors.radius }]}>
+          <Text style={[styles.nodeText, { color: c.foreground }]}>
+            ¿El compresor del equipo es tecnología Inverter?
+          </Text>
+          <Text style={[styles.nodeDetail, { color: c.mutedForeground }]}>
+            Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad.
+          </Text>
+          <View style={[styles.tipBox, { backgroundColor: c.secondary, borderRadius: 10 }]}>
+            <Feather name="info" size={14} color={c.primary} />
+            <Text style={[styles.tipText, { color: c.secondaryForeground }]}>
+              Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.options}>
+          <TouchableOpacity
+            onPress={() => { setEsInverter(true); setInverterListo(true); }}
+            activeOpacity={0.75}
+            style={[styles.optionBtn, { borderColor: '#047857', backgroundColor: '#04785708', borderRadius: colors.radius }]}
+          >
+            <Feather name="cpu" size={16} color="#047857" />
+            <Text style={[styles.optionText, { color: '#047857' }]}>Sí, es tecnología Inverter → validar código de error</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => { setEsInverter(false); setInverterListo(true); }}
+            activeOpacity={0.75}
+            style={[styles.optionBtn, { borderColor: c.success, backgroundColor: c.success + '08', borderRadius: colors.radius }]}
+          >
+            <Feather name="check-circle" size={16} color={c.success} />
+            <Text style={[styles.optionText, { color: c.success }]}>No, es compresor convencional → continuar con el árbol</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ marginTop: 12 }}>
+          <PrimaryButton label="Volver" variant="outline" onPress={handleBack} />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ETAPA 0d — Voltaje en la salida de la tarjeta Inverter (SOLO si es Inverter)
+  // Se hace después de confirmar la tecnología Inverter y antes de validar los
+  // códigos de error, porque el resultado orienta el diagnóstico del módulo.
+  // ══════════════════════════════════════════════════════════════════════════
+  if (inverterListo && esInverter && !salidaListo) {
+    return (
+      <ScrollView
+        style={{ flex: 1, backgroundColor: c.background }}
+        contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 40 }}
+      >
+        <View style={[styles.progressRow, { backgroundColor: c.muted, borderRadius: 6 }]}>
+          <View style={[styles.progressFill, { backgroundColor: '#7C3AED', width: '16%', borderRadius: 6 }]} />
+        </View>
+        <Text style={[styles.progressLabel, { color: c.mutedForeground }]}>Paso previo · Salida tarjeta Inverter</Text>
+
+        <View style={[styles.typeBadge, { backgroundColor: '#7C3AED18', borderRadius: 8 }]}>
+          <Feather name="zap" size={14} color="#7C3AED" />
+          <Text style={[styles.typeBadgeText, { color: '#7C3AED' }]}>EVIDENCIA INICIAL</Text>
+        </View>
+
+        <View style={[styles.nodeCard, { backgroundColor: c.card, borderColor: '#7C3AED', borderRadius: colors.radius }]}>
+          <Text style={[styles.nodeText, { color: c.foreground }]}>{SALIDA_INVERTER_NODE.text}</Text>
+          <Text style={[styles.nodeDetail, { color: c.mutedForeground }]}>{SALIDA_INVERTER_NODE.detail}</Text>
+          <View style={[styles.tipBox, { backgroundColor: c.secondary, borderRadius: 10 }]}>
+            <Feather name="info" size={14} color={c.primary} />
+            <Text style={[styles.tipText, { color: c.secondaryForeground }]}>{SALIDA_INVERTER_NODE.tip}</Text>
+          </View>
+        </View>
+
+        <GifInstruction
+          uri={gifUri}
+          label={gifLabel}
+          visible={gifVisible}
+          onToggle={toggleGif}
+          colors={c}
+        />
+
+        <View style={styles.evidenceSection}>
+          {salidaUri && (
+            <View style={styles.evidencePreview}>
+              <Image source={{ uri: salidaUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
+              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
+                <Feather name="check" size={14} color={c.successForeground} />
+              </View>
+            </View>
+          )}
+          <TouchableOpacity
+            onPress={handleCaptureSalida}
+            activeOpacity={0.75}
+            style={[styles.captureBtn, { backgroundColor: '#7C3AED18', borderColor: '#7C3AED', borderRadius: colors.radius }]}
+          >
+            <Feather name="camera" size={20} color="#7C3AED" />
+            <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
+              {salidaUri ? 'Tomar otra foto' : 'Abrir cámara / galería'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.evidenceLabel, { color: c.mutedForeground }]}>{SALIDA_INVERTER_NODE.evidenceLabel}</Text>
+        </View>
+
+        {salidaUri
+          ? <PrimaryButton label="Guardar medición y continuar" icon="arrow-right" onPress={() => setSalidaListo(true)} />
+          : (
+            <TouchableOpacity onPress={() => setSalidaListo(true)} style={styles.skipLink}>
+              <Text style={[styles.skipText, { color: c.mutedForeground }]}>Omitir foto de la salida y continuar</Text>
+            </TouchableOpacity>
+          )}
+        <View style={{ marginTop: 12 }}>
+          <PrimaryButton label="Volver" variant="outline" onPress={handleBack} />
+        </View>
+      </ScrollView>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ETAPA 1 — Verificación de código de error (Inverter o acceso directo desde el menú de fallas)
+  // ══════════════════════════════════════════════════════════════════════════
+  if (!errorListo && (esInverter || equipoFalla === '__error__')) {
+
+    // 1A — Pregunta inicial: ¿hay código de error? (tras la medición de salida Inverter)
     if (tieneError === null) {
       return (
         <ScrollView
@@ -338,9 +664,9 @@ export default function ArbolScreen() {
           contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 40 }}
         >
           <View style={[styles.progressRow, { backgroundColor: c.muted, borderRadius: 6 }]}>
-            <View style={[styles.progressFill, { backgroundColor: c.primary, width: '10%', borderRadius: 6 }]} />
+            <View style={[styles.progressFill, { backgroundColor: c.primary, width: '13%', borderRadius: 6 }]} />
           </View>
-          <Text style={[styles.progressLabel, { color: c.mutedForeground }]}>Verificación de código de error</Text>
+          <Text style={[styles.progressLabel, { color: c.mutedForeground }]}>{equipoFalla === '__error__' ? 'Validación de código de error' : 'Verificación de código de error'}</Text>
 
           <View style={[styles.typeBadge, { backgroundColor: c.primary + '18', borderRadius: 8 }]}>
             <Feather name="alert-circle" size={14} color={c.primary} />
@@ -373,13 +699,22 @@ export default function ArbolScreen() {
             >
               <Feather name="alert-triangle" size={16} color="#F5821F" />
               <Text style={[styles.optionText, { color: '#F5821F' }]}>Sí, hay código de error o destellos</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setErrorListo(true)}
+            </TouchableOpacity>            <TouchableOpacity
+              onPress={() => {
+                if (equipoFalla === '__error__') {
+                  Alert.alert(
+                    'Sin código de error',
+                    'El equipo no muestra código. Vuelve al menú y selecciona la falla por síntoma para continuar el diagnóstico.',
+                  );
+                  router.back();
+                  return;
+                }
+                setErrorListo(true);
+              }}
               activeOpacity={0.75}
               style={[styles.optionBtn, { borderColor: c.success, backgroundColor: c.success + '08', borderRadius: colors.radius }]}
             >
-              <Feather name="check-circle" size={16} color={c.success} />
+              <Feather name="check-circle" size={16} color={c.success } />
               <Text style={[styles.optionText, { color: c.success }]}>No, el equipo no muestra ningún código</Text>
             </TouchableOpacity>
           </View>
@@ -390,7 +725,7 @@ export default function ArbolScreen() {
     }
 
     // 1B — Lista de códigos + búsqueda
-    if (tieneError && !codigoSel && !errorListo) {
+    if (tieneError && !codigoSel) {
       return (
         <ScrollView
           style={{ flex: 1, backgroundColor: c.background }}
@@ -546,15 +881,8 @@ export default function ArbolScreen() {
 
           <View style={{ height: 20 }} />
           <PrimaryButton
-            label="Usar código como pista y seguir árbol"
-            icon="check-circle"
-            onPress={iniciarArbolConCodigo}
-          />
-          <View style={{ height: 10 }} />
-          <PrimaryButton
             label="Continuar con árbol de diagnóstico guiado"
-            variant="secondary"
-            icon="git-branch"
+            icon="check-circle"
             onPress={iniciarArbolConCodigo}
           />
           <View style={{ height: 10 }} />
@@ -675,6 +1003,24 @@ export default function ArbolScreen() {
         onToggle={toggleGif}
         colors={c}
       />
+
+      {/* Consulta de la tabla del sensor de temperatura (NTC) */}
+      {node.ntcTable && (
+        <TouchableOpacity
+          onPress={() => router.push('/sensores-temperatura')}
+          activeOpacity={0.75}
+          style={[styles.ntcTableBtn, { backgroundColor: c.card, borderColor: c.primary, borderRadius: colors.radius }]}
+        >
+          <Feather name="thermometer" size={18} color={c.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.ntcTableBtnText, { color: c.primary }]}>Consultar tabla del sensor de temperatura</Text>
+            <Text style={[styles.ntcTableBtnHint, { color: c.mutedForeground }]}>
+              Compara tu medición con la resistencia esperada según la temperatura.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={c.primary} />
+        </TouchableOpacity>
+      )}
 
       {/* Evidencia */}
       {node.type === 'evidence' && (
@@ -969,6 +1315,25 @@ const styles = StyleSheet.create({
   },
   gifHidden: {
     fontSize: 12, lineHeight: 18, paddingVertical: 7,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  ntcTableBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    marginBottom: 16,
+  },
+  ntcTableBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  ntcTableBtnHint: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 2,
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
   gifModalBackdrop: {

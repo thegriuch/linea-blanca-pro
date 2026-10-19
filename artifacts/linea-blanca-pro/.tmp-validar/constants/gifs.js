@@ -18,7 +18,7 @@ exports.GIFS = [
     },
     {
         key: 'medir-amperaje',
-        uri: require('@/assets/images/gifs/medir-amperaje.gif'),
+        uri: require('@/assets/images/gifs/medir-amperaje.webp'),
         label: 'Medir amperaje con pinza amperimétrica',
     },
     {
@@ -28,27 +28,28 @@ exports.GIFS = [
     },
     {
         key: 'medir-continuidad-tierra',
-        uri: require('@/assets/images/gifs/medir-continuidad-tierra.gif'),
+        uri: require('@/assets/images/gifs/medir-continuidad-tierra.webp'),
         label: 'Medir continuidad a tierra',
     },
     {
         key: 'medir-ptc',
-        uri: require('@/assets/images/gifs/medir-ptc.gif'),
+        // Nota: el archivo original es un PNG (animado) con extensión .gif; se renombró a .png
+        uri: require('@/assets/images/gifs/medir-ptc.webp'),
         label: 'Medir kit PTC y protector térmico',
     },
     {
         key: 'manometros',
-        uri: require('@/assets/images/gifs/manometros.gif'),
+        uri: require('@/assets/images/gifs/manometros.webp'),
         label: 'Conectar y leer manómetros',
     },
     {
         key: 'prueba-vacio',
-        uri: require('@/assets/images/gifs/prueba-vacio.gif'),
+        uri: require('@/assets/images/gifs/prueba-vacio.webp'),
         label: 'Prueba de vacío con bomba',
     },
     {
         key: 'prueba-jabonosa',
-        uri: require('@/assets/images/gifs/prueba-jabonosa.gif'),
+        uri: require('@/assets/images/gifs/prueba-jabonosa.webp'),
         label: 'Prueba jabonosa para detectar fugas',
     },
     {
@@ -67,13 +68,13 @@ exports.GIFS = [
         label: 'Verificar presiones con compresor en marcha',
     },
     {
-        key: 'medir-señal-inverter',
-        uri: require('@/assets/images/gifs/medir-señal-inverter.gif'),
+        key: 'medir-senal-inverter',
+        uri: require('@/assets/images/gifs/medir-senal-inverter.webp'),
         label: 'Medir señal AC del módulo Inverter (U, V, W)',
     },
     {
         key: 'medicion-compresor-kalley',
-        uri: require('@/assets/images/gifs/medicion_compresor_kalley_animado.gif'),
+        uri: require('@/assets/images/gifs/medicion_compresor_kalley_animado.webp'),
         label: 'Medición del compresor (animación)',
     },
 ];

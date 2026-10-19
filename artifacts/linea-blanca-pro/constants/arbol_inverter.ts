@@ -47,27 +47,74 @@ export const INVERTER_TREE: DiagnosticTree = {
     text: 'Medir señal de salida del módulo Inverter hacia el compresor (terminales U, V, W)',
     detail: 'Con el equipo energizado y el compresor intentando arrancar, mide AC entre cada par de terminales: U-V, U-W, V-W. Deben mostrar valores similares entre sí (20–200 V AC según modelo y velocidad de operación).',
     tip: 'Si los tres valores son similares y el compresor no gira → el compresor está bloqueado. Si algún valor es 0 o muy diferente → el módulo tiene falla en la etapa de potencia.',
-    gifUri: 'medir-señal-inverter',
+    gifUri: 'medir-senal-inverter',
     nextId: 'senal_ok',
   },
   senal_ok: {
     id: 'senal_ok', type: 'question',
     text: '¿Los tres terminales (U–V, U–W, V–W) muestran señal AC similar entre sí?',
     options: [
-      { label: 'Sí, señales balanceadas y similares', nextId: 'result_compresor_inverter', color: 'neutral' },
+      { label: 'Sí, señales balanceadas y similares', nextId: 'medir_bobinas_inv', color: 'neutral' },
       { label: 'No, algún terminal en 0 o con valor muy diferente', nextId: 'result_modulo_salida', color: 'danger' },
     ],
   },
-  result_compresor_inverter: {
-    id: 'result_compresor_inverter', type: 'result',
-    text: 'Compresor Inverter bloqueado o defectuoso — solicitar reemplazo',
+  // ── Validación del compresor: bobinas en rango y aislamiento a tierra ──────
+  medir_bobinas_inv: {
+    id: 'medir_bobinas_inv', type: 'measure',
+    text: 'Medir las bobinas del compresor Inverter (U-V, U-W, V-W) desenergizado',
+    detail: 'Descarga los capacitores y desconecta los cables del compresor. En escala de ohmios mide las tres fases: U-V, U-W y V-W. Las tres lecturas deben ser IDÉNTICAS entre sí (balanceadas), típicamente entre 0.5 y 4 Ω en compresores inverter pequeños y hasta 1–10 Ω según el modelo. Compara con el valor de la placa del compresor.',
+    tip: 'Lecturas desbalanceadas entre fases (más de 10% de diferencia) = devanado con corto entre espiras. Una fase en abierto (∞) = devanado roto. Compara siempre con la placa.',
+    gifUri: 'medir-bobinas',
+    evidenceLabel: 'Foto de las tres mediciones de bobinas (U-V, U-W, V-W) y la placa del compresor',
+    nextId: 'bobinas_inv_ok',
+  },
+  bobinas_inv_ok: {
+    id: 'bobinas_inv_ok', type: 'question',
+    text: '¿Las tres fases miden idénticas entre sí y dentro del rango de placa?',
+    options: [
+      { label: 'Sí, balanceadas y en rango', nextId: 'tierra_inv', color: 'success' },
+      { label: 'No, desbalanceadas o con fase abierta', nextId: 'result_compresor_inverter', color: 'danger' },
+    ],
+  },
+  tierra_inv: {
+    id: 'tierra_inv', type: 'measure',
+    text: 'Verificar aislamiento a tierra de las bobinas del compresor',
+    detail: 'Con el compresor desconectado, mide continuidad/resistencia entre cada terminal (U, V, W) y el cuerpo del compresor (cobre desnudo o tornillo de la carcasa). Debe marcar ABIERTO (∞ / OL). Cualquier lectura de continuidad, o menos de 2 MΩ, significa bobinas caídas a tierra: el compresor no es reparable.',
+    tip: 'Usa la escala de ohmios más alta del multímetro. Una caída a tierra bajo el módulo inverter lo destruye al instalarlo nuevo: valida esto ANTES de cambiar el módulo.',
+    gifUri: 'medir-continuidad-tierra',
+    evidenceLabel: 'Foto de la medición de cada terminal contra tierra (debe marcar OL/∞)',
+    nextId: 'tierra_inv_ok',
+  },
+  tierra_inv_ok: {
+    id: 'tierra_inv_ok', type: 'question',
+    text: '¿Las bobinas están caídas a tierra (continuidad con la carcasa)?',
+    options: [
+      { label: 'Sí, hay continuidad a tierra', nextId: 'result_compresor_tierra', color: 'danger' },
+      { label: 'No, aislamiento correcto (OL)', nextId: 'result_compresor_inverter', color: 'neutral' },
+    ],
+  },
+  result_compresor_tierra: {
+    id: 'result_compresor_tierra', type: 'result',
+    text: 'Compresor Inverter con bobinas caídas a tierra — reemplazo obligatorio',
     result: {
       causes: [
-        { cause: 'Compresor inverter bloqueado mecánicamente', probability: 55 },
-        { cause: 'Devanados del compresor inverter en corto o abiertos', probability: 35 },
-        { cause: 'Sensor de posición del rotor defectuoso', probability: 10 },
+        { cause: 'Aislamiento de los devanados degradado (bobinas caídas a tierra)', probability: 85 },
+        { cause: 'Humedad interna del compresor que condujo a la carcasa', probability: 15 },
       ],
-      recommendation: 'Medir resistencia entre U-V, U-W, V-W en el compresor (deben ser idénticos, típicamente 1–10 Ω). Verificar que no haya continuidad a tierra. Solicitar compresor inverter con la referencia exacta del equipo.',
+      recommendation: 'El compresor no es reparable: reemplazarlo con la referencia exacta. NO instalar un módulo inverter nuevo sin cambiar el compresor: la caída a tierra destruye el IGBT del módulo al energizar. Verificar también el filtro secante (humedad del sistema).',
+      parts: ['Compresor Inverter', 'Filtro secante'],
+    },
+  },
+  result_compresor_inverter: {
+    id: 'result_compresor_inverter', type: 'result',
+    text: 'Compresor Inverter bloqueado o con bobinas defectuosas — solicitar reemplazo',
+    result: {
+      causes: [
+        { cause: 'Devanados del compresor desbalanceados, en corto entre espiras o abiertos', probability: 50 },
+        { cause: 'Compresor inverter bloqueado mecánicamente', probability: 35 },
+        { cause: 'Sensor de posición del rotor defectuoso', probability: 15 },
+      ],
+      recommendation: 'Con bobinas desbalanceadas o abiertas (verificadas contra la placa), el compresor se reemplaza con la referencia exacta. Si las bobinas y el aislamiento están correctos pero no gira con señal balanceada, está bloqueado mecánicamente: reemplazar también. Verificar el aislamiento a tierra del nuevo antes de energizar.',
       parts: ['Compresor Inverter'],
     },
   },

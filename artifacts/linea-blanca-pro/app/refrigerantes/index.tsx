@@ -37,7 +37,8 @@ export default function RefrigerantesScreen() {
   const [seleccionado, setSeleccionado] = useState<RefrigeranteInfo>(REFRIGERANTES[0]);
   const [modo, setModo] = useState<Modo>('temp_a_psi');
   const [inputVal, setInputVal] = useState('');
-  const [usarManometrico, setUsarManometrico] = useState(false); // psi(g) vs psi(a)
+  // psi(g) por defecto: es lo que muestra el manómetro de campo (lectura a los 15 min de arrancado el equipo)
+  const [usarManometrico, setUsarManometrico] = useState(true);
 
   // ── Cálculo ──────────────────────────────────────────────────────────────
   const resultado = useMemo(() => {
@@ -215,6 +216,48 @@ export default function RefrigerantesScreen() {
             </Text>
           </View>
         </TouchableOpacity>
+
+        {/* ── Recomendación de lectura en campo (documento de referencia) ── */}
+        <View style={styles.lecturaCard}>
+          <View style={styles.lecturaHeader}>
+            <Feather name="clock" size={18} color="#1D4ED8" />
+            <Text style={styles.lecturaTitle}>Lectura exacta: presión manométrica a los 15 minutos</Text>
+          </View>
+          <Text style={styles.lecturaMain}>
+            Se recomienda tomar la presión manométrica (psi g) a los 15 minutos después de arrancar el producto: con el sistema estabilizado, el manómetro entrega los valores exactos.
+          </Text>
+          <View style={styles.lecturaBullets}>
+            {[
+              '0–5 min · observa el arranque: no tomes la primera lectura como diagnóstico.',
+              '10–15 min · primera reevaluación después de un ajuste pequeño.',
+              '20–30 min · comprueba que presión y temperaturas siguen convergiendo.',
+              '30–60 min · continúa la observación si el gabinete o el producto aún cambian.',
+            ].map((txt) => (
+              <Text key={txt} style={styles.lecturaBullet}>{txt}</Text>
+            ))}
+          </View>
+          <Text style={styles.lecturaNota}>
+            Si la temperatura del sistema sigue cambiando, no lo declares estabilizado aunque la presión parezca estable. Los valores P-T son presiones de saturación: compáralos con la especificación del fabricante, no como una presión universal de trabajo.
+          </Text>
+        </View>
+
+        {/* ── Cómo usar la regla (superheat / subcooling) ────────────── */}
+        <View style={[styles.lecturaCard, { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' }]}>
+          <View style={styles.lecturaHeader}>
+            <Feather name="tool" size={18} color="#15803D" />
+            <Text style={[styles.lecturaTitle, { color: '#166534' }]}>Cómo usar la regla en campo</Text>
+          </View>
+          {[
+            '1. Identifica el refrigerante exacto en la placa del equipo.',
+            '2. Lee la presión en PSIG y busca la temperatura de saturación correspondiente.',
+            '3. Mide simultáneamente la temperatura real de la tubería.',
+            '4. En succión: Sobre-calentamiento = T° real de succión − T° de saturación.',
+            '5. En líquido: Sub-enfriamiento = T° de saturación − T° real del líquido.',
+            '6. Compara con la especificación del fabricante: no uses una presión genérica como objetivo de carga.',
+          ].map((txt) => (
+            <Text key={txt} style={[styles.lecturaBullet, { color: '#166534' }]}>{txt}</Text>
+          ))}
+        </View>
 
         {/* ── Input ───────────────────────────────────────────────────── */}
         <Text style={[styles.sectionLabel, { color: c.mutedForeground, marginTop: 20 }]}>
@@ -535,6 +578,49 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
+  },
+  lecturaCard: {
+    marginTop: 12,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#93C5FD',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+  },
+  lecturaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  lecturaTitle: {
+    flex: 1,
+    color: '#1E40AF',
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  lecturaMain: {
+    color: '#1E3A8A',
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  lecturaBullets: {
+    gap: 4,
+  },
+  lecturaBullet: {
+    color: '#1E40AF',
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  lecturaNota: {
+    color: '#1E40AF',
+    fontSize: 10.5,
+    lineHeight: 15,
+    fontStyle: 'italic',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
   warningCard: {
     flexDirection: 'row',

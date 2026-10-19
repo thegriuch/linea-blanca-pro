@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { DocIcon } from '@/components/DocIcon';
 import { getEquipoInfo } from '@/constants/equipos';
 import colors from '@/constants/colors';
 
@@ -78,11 +79,15 @@ export default function DiagnosticoTab() {
         { icon: 'git-branch', title: 'Árbol de decisión', desc: 'Flujo ramificado según tus respuestas. Cada respuesta afina el siguiente paso.' },
         { icon: 'camera', title: 'Evidencia fotográfica', desc: 'La app te pide fotos en los momentos clave del diagnóstico.' },
         { icon: 'bar-chart-2', title: 'Probabilidades', desc: 'Resultado con porcentaje de probabilidad por causa posible.' },
-        { icon: 'file-text', title: 'Reporte exportable', desc: 'Genera y comparte un reporte técnico completo al finalizar.' },
+        { icon: 'doc', title: 'Reporte exportable', desc: 'Genera y comparte un reporte técnico completo al finalizar.' },
       ].map((f) => (
         <View key={f.title} style={[styles.feature, { borderColor: c.border, borderRadius: colors.radius }]}>
           <View style={[styles.featureIcon, { backgroundColor: c.secondary, borderRadius: 10 }]}>
-            <Feather name={f.icon as keyof typeof Feather.glyphMap} size={20} color={c.primary} />
+            {f.icon === 'doc' ? (
+              <DocIcon size={20} color={c.primary} />
+            ) : (
+              <Feather name={f.icon as keyof typeof Feather.glyphMap} size={20} color={c.primary} />
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: c.foreground }]}>{f.title}</Text>

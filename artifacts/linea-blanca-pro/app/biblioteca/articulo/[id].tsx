@@ -16,7 +16,7 @@ export default function ArticuloScreen() {
   const found = findArticle(id);
 
   if (!found) {
-    return <EmptyState icon="file-text" title="Artículo no encontrado" />;
+    return <EmptyState icon="doc" title="Artículo no encontrado" />;
   }
 
   const { article, category } = found;

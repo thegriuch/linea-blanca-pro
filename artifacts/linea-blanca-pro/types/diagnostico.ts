@@ -43,6 +43,15 @@ export interface TreeNode {
   nextId?: string; // for linear nodes (action / measure / evidence)
   evidenceLabel?: string;
   gifUri?: string;
+  ntcTable?: boolean; // muestra botón para consultar la tabla del sensor de temperatura
+  /**
+   * Gate automático: si la app ya conoce la respuesta (p. ej. el técnico ya
+   * indicó en el flujo inicial que el compresor es Inverter), el nodo se salta
+   * y avanza directamente a la opción cuyo label empiece por el prefijo dado.
+   * Ej.: gate: 'Sí,' en la pregunta ¿Es inverter? entra por la rama inverter
+   * sin volver a preguntar.
+   */
+  gate?: string;
   result?: {
     causes: DiagnosticCause[];
     recommendation: string;
@@ -90,6 +99,7 @@ export interface ConclusionInfo {
   repuestos: string;
   tiempoEstimado: string;
   observaciones: string;
+  codigosIris: string[]; // códigos CI-XXXX seleccionados por el técnico
 }
 
 export interface DiagnosticErrorCode {

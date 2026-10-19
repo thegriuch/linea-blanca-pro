@@ -18,6 +18,7 @@ import { ProbabilityBar } from '@/components/ProbabilityBar';
 import { EmptyState } from '@/components/EmptyState';
 import { getEquipoInfo } from '@/constants/equipos';
 import { shareReport } from '@/utils/share';
+import { getIrisParaRepuesto } from '@/constants/iris';
 import colors from '@/constants/colors';
 
 function fmt(d: string | undefined): string {
@@ -37,11 +38,18 @@ export default function ResultadoScreen() {
   const session = getSession(id);
 
   if (!session) {
-    return <EmptyState icon="file-text" title="Reporte no encontrado" description="Este diagnóstico no está disponible." />;
+    return <EmptyState icon="doc" title="Reporte no encontrado" description="Este diagnóstico no está disponible." />;
   }
 
   const equipo = getEquipoInfo(session.equipo.tipo);
   const { cliente, conclusion, result, evidence } = session;
+
+  // Mismo criterio que el reporte: seleccionados + IRIS de los repuestos sugeridos
+  const codigosIrisCompletos = [...(conclusion.codigosIris ?? [])];
+  for (const parte of result?.parts ?? []) {
+    const irisParte = getIrisParaRepuesto(session.equipo.tipo, parte);
+    if (irisParte && !codigosIrisCompletos.includes(irisParte.codigo)) codigosIrisCompletos.push(irisParte.codigo);
+  }
 
   const handleShare = async () => {
     setSharing(true);
@@ -149,6 +157,9 @@ export default function ResultadoScreen() {
           <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}>
             <Text style={[styles.sectionTitle, { color: c.primary }]}>Conclusión técnica</Text>
             <Text style={[styles.conclusionText, { color: c.foreground }]}>{conclusion.diagnostico}</Text>
+            {codigosIrisCompletos.length > 0 && (
+              <InfoRow label="Código IRIS" value={codigosIrisCompletos.join(' · ')} c={c} />
+            )}
             {conclusion.repuestos && <InfoRow label="Repuestos" value={conclusion.repuestos} c={c} />}
             {conclusion.tiempoEstimado && <InfoRow label="Tiempo estimado" value={conclusion.tiempoEstimado} c={c} />}
             {conclusion.observaciones && <InfoRow label="Observaciones" value={conclusion.observaciones} c={c} />}

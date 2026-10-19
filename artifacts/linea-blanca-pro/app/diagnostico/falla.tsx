@@ -136,6 +136,9 @@ export default function FallaScreen() {
 
   const equipo = getEquipoInfo(currentSession.equipo.tipo);
   const fallas = getFallas(currentSession.equipo.tipo);
+  const tipo = currentSession.equipo.tipo as string;
+  // Acceso directo a la validación de código de error (lavadora y secadora)
+  const esErrorFalla = tipo === 'lavadora' || tipo === 'secadora';
 
   const handleStart = () => {
     if (!selectedFalla) {
@@ -150,6 +153,21 @@ export default function FallaScreen() {
       fallaId: selectedFalla.id,
       fallaLabel: selectedFalla.label,
       treeId: selectedFalla.treeId,
+    });
+    router.push('/diagnostico/arbol');
+  };
+
+  // Acceso directo: marca la falla especial '__error__' para que el árbol
+  // entre directo a la validación del código de error (sin pregunta Inverter).
+  const handleStartError = () => {
+    setEquipo({
+      tipo: currentSession.equipo.tipo,
+      marca: '',
+      modelo,
+      serie,
+      fallaId: '__error__',
+      fallaLabel: 'Validación de código de error',
+      treeId: 'noenciende',
     });
     router.push('/diagnostico/arbol');
   };
@@ -179,6 +197,25 @@ export default function FallaScreen() {
       <Text style={[styles.hint, { color: c.mutedForeground }]}>
         Selecciona el síntoma que reporta el cliente. Esto define el árbol de diagnóstico a seguir.
       </Text>
+
+      {esErrorFalla && (
+        <TouchableOpacity
+          onPress={handleStartError}
+          activeOpacity={0.75}
+          style={[styles.fallaItem, { borderColor: '#F5821F', backgroundColor: '#F5821F12', borderRadius: colors.radius, marginBottom: 14 }]}
+        >
+          <View style={[styles.fallaIcon, { backgroundColor: '#F5821F20', borderRadius: 10 }]}>
+            <Feather name="alert-circle" size={18} color="#F5821F" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.fallaLabel, { color: '#F5821F' }]}>Validación de código de error</Text>
+            <Text style={{ fontSize: 12, color: c.mutedForeground, marginTop: 2 }} numberOfLines={2}>
+              Ir directo a la validación del código que muestra el equipo
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color="#F5821F" />
+        </TouchableOpacity>
+      )}
 
       <View style={styles.fallaList}>
         {fallas.map((f) => {
