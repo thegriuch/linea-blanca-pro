@@ -62,14 +62,14 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "owner": "thergriuch",
+    "owner": "thegriuch1",
     "extra": {
       "eas": {
-        "projectId": "3f99f0d3-ba8d-45ef-b361-179687d19a53"
+        "projectId": "5e24d4a3-e4dd-4512-89ce-f7589d2448c7"
       }
     },
     "updates": {
-      "url": "https://u.expo.dev/3f99f0d3-ba8d-45ef-b361-179687d19a53",
+      "url": "https://u.expo.dev/5e24d4a3-e4dd-4512-89ce-f7589d2448c7",
       "enabled": true,
       "fallbackToCacheTimeout": 0,
       "checkAutomatically": "ON_LOAD"

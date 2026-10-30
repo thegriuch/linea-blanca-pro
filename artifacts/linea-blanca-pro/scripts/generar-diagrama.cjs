@@ -1,5 +1,6 @@
 /* Genera docs/diagrama-arboles.html: mapa general (productos → fallas/códigos → árboles)
    y el diagrama de flujo de CADA árbol, tomado de los datos reales de constants/.
+   Estética de marca Kalley (azul #000B8C / amarillo #FFC629, logo en docs/kalley-logo.svg).
    Uso: node scripts/generar-diagrama.cjs   (idempotente; regenera .tmp-validar) */
 const { execSync } = require('node:child_process');
 const fs = require('node:fs');
@@ -19,7 +20,12 @@ Module._resolveFilename = function (request, ...args) {
   return origResolve.call(this, request, ...args);
 };
 
-// 3) Cargar datos reales
+// 3) Logo oficial de Kalley embebido como data URI (docs/kalley-logo.svg)
+const LOGO_PATH = path.join(ROOT, 'docs', 'kalley-logo.svg');
+const KALLEY_LOGO = fs.readFileSync(LOGO_PATH, 'utf8')
+  .toString('base64');
+
+// 4) Cargar datos reales
 const { DECISION_TREES } = require(path.join(COMPILED, 'constants', 'arboles_index.js'));
 const { FALLAS_POR_EQUIPO } = require(path.join(COMPILED, 'constants', 'fallas.js'));
 const { TREE_IDS_BY_EQUIPO } = require(path.join(COMPILED, 'constants', 'codigos_arboles.js'));
@@ -30,6 +36,19 @@ const aires = require(path.join(COMPILED, 'constants', 'aires_arboles.js'));
 const lav = require(path.join(COMPILED, 'constants', 'arboles_lavadora.js'));
 const lavCodes = require(path.join(COMPILED, 'constants', 'arboles_codigos_lavadora.js'));
 const { EQUIPOS } = require(path.join(COMPILED, 'constants', 'equipos.js'));
+
+// ── Paleta corporativa Kalley ─────────────────────────────────────────────────
+const K = {
+  azul: '#000B8C',        // azul corporativo (logo)
+  azulHover: '#1A21B8',
+  azulProf: '#000747',
+  amarillo: '#FFC629',    // amarillo corporativo (logo)
+  gris: '#373435',
+  texto: '#20222B',
+  fondo: '#F2F4FA',
+  verde: '#0B8A4E',       // semántico: resultado / diagnóstico
+  azulMed: '#1668C1',     // semántico: medición técnica
+};
 
 // ── Familias de secciones ─────────────────────────────────────────────────────
 const FAMILIAS = [
@@ -92,13 +111,13 @@ function orderNodes(tree) {
 }
 
 // ── Generador Mermaid por árbol ───────────────────────────────────────────────
-const CLASS_DEFS = '  classDef qd fill:#EFF6FF,stroke:#145DA0,stroke-width:1.5px,color:#0f172a\n' +
-  '  classDef md fill:#ECFEFF,stroke:#0E7490,stroke-width:1.5px,color:#0f172a\n' +
-  '  classDef ad fill:#FFF7ED,stroke:#B45309,stroke-width:1.5px,color:#0f172a\n' +
-  '  classDef ev fill:#F5F3FF,stroke:#7C3AED,stroke-width:1.5px,color:#0f172a\n' +
-  '  classDef rs fill:#ECFDF5,stroke:#047857,stroke-width:1.5px,color:#0f172a\n' +
-  '  classDef gt fill:#FEF9C3,stroke:#A16207,stroke-width:1.5px,stroke-dasharray:4 3,color:#0f172a\n' +
-  '  classDef sm fill:#F1F5F9,stroke:#64748B,stroke-width:1.2px,color:#0f172a\n';
+const CLASS_DEFS = '  classDef qd fill:#EEF1FF,stroke:#000B8C,stroke-width:1.6px,color:#12124B\n' +
+  '  classDef md fill:#E6F0FC,stroke:#1668C1,stroke-width:1.6px,color:#0E3155\n' +
+  '  classDef ad fill:#FFF8DF,stroke:#C99400,stroke-width:1.6px,color:#4A3800\n' +
+  '  classDef ev fill:#F3F4F6,stroke:#373435,stroke-width:1.4px,color:#20222B\n' +
+  '  classDef rs fill:#EAF7F0,stroke:#0B8A4E,stroke-width:1.6px,color:#06371F\n' +
+  '  classDef gt fill:#FFFBEB,stroke:#C99400,stroke-width:1.4px,stroke-dasharray:5 4,color:#4A3800\n' +
+  '  classDef sm fill:#F1F3F7,stroke:#6B7080,stroke-width:1.2px,color:#20222B\n';
 
 const TYPE_CLASS = { question: 'qd', measure: 'md', action: 'ad', evidence: 'ev', result: 'rs' };
 
@@ -108,7 +127,7 @@ function mermaidTree(treeId, tree) {
   const gifs = nodes.filter((n) => n.gifUri);
   const lines = [
     `flowchart TD`,
-    `%%{init: {"theme":"base","flowchart":{"htmlLabels":true,"curve":"basis","nodeSpacing":38,"rankSpacing":44},"themeVariables":{"fontFamily":"system-ui,Segoe UI,sans-serif","fontSize":"13px"}}}%%`,
+    `%%{init: {"theme":"base","flowchart":{"htmlLabels":true,"curve":"basis","nodeSpacing":40,"rankSpacing":46},"themeVariables":{"fontFamily":"system-ui,Segoe UI,sans-serif","fontSize":"13px","primaryColor":"#EEF1FF","primaryTextColor":"#12124B","lineColor":"#AEB4C4","edgeLabelBackground":"#F2F4FA"}}}%%`,
     CLASS_DEFS,
   ];
   const sharedIds = new Set(Object.keys(nevera.INVERTER_TREE || {}));
@@ -119,11 +138,11 @@ function mermaidTree(treeId, tree) {
       const causes = (n.result && n.result.causes) || [];
       const top = causes[0];
       label = `<b>${shortTxt(n.text, 60)}</b>` +
-        `<br/><small>🎯 ${shortTxt(top ? top.cause : '—', 55)} · ${top ? top.probability : '—'}%` +
+        `<br/><small>Principal: ${shortTxt(top ? top.cause : '—', 55)} · ${top ? top.probability : '—'}%` +
         ` · ${causes.length} causa${causes.length === 1 ? '' : 's'}</small>`;
     } else {
       label = `<b>${shortTxt(n.text, 78)}</b><br/><small>${n.id}` +
-        (n.gifUri ? ' · 🎬 guía' : '') + (n.gate ? ' · ⏭ auto' : '') + '</small>';
+        (n.gifUri ? ' · guía visual' : '') + (n.gate ? ' · auto' : '') + '</small>';
     }
     lines.push(`  ${n.id}["${label}"]`);
   }
@@ -192,7 +211,7 @@ for (const fam of FAMILIAS) {
         <summary>
           <span class="tid">${htmlEsc(treeId)}</span>
           <span class="sdesc">${htmlEsc(startTxt)}</span>
-          <span class="stat">${stats.pasos} pasos · ${stats.resultados} diagnósticos · ${stats.guias} guías 🎬</span>
+          <span class="stat">${stats.pasos} pasos · ${stats.resultados} diagnósticos · ${stats.guias} guías</span>
         </summary>
         <div class="graph"><pre class="mermaid">${htmlEsc(code)}</pre></div>
       </details>`);
@@ -201,8 +220,7 @@ for (const fam of FAMILIAS) {
 
   treeSections += `
   <section>
-    <h2>${htmlEsc(fam.title)}</h2>
-    <p class="famcount">${ids.length} árbol(es)</p>
+    <div class="secHead"><h2>${htmlEsc(fam.title)}</h2><span class="secCount">${ids.length} árbol(es)</span></div>
     ${famCards.join('\n')}
   </section>`;
 }
@@ -210,7 +228,7 @@ for (const fam of FAMILIAS) {
 // Tarjetas de productos (con fallas y códigos)
 const ordenProductos = Object.keys(FALLAS_POR_EQUIPO);
 const prodCards = ordenProductos.map((tipo) => {
-  const info = prodLabel[tipo] || { label: tipo, color: '#64748B' };
+  const info = prodLabel[tipo] || { label: tipo, color: '#6B7080' };
   const fallas = FALLAS_POR_EQUIPO[tipo] || [];
   const seen = new Set();
   const fallaChips = fallas
@@ -220,27 +238,27 @@ const prodCards = ordenProductos.map((tipo) => {
     .join('');
   const codeGroups = groupCodes(TREE_IDS_BY_EQUIPO[tipo]);
   const codeRows = codeGroups
-    .map((g) => `<div class="codeRow"><span class="codes">${g.codes.map(htmlEsc).join(', ')}</span> → <a href="#tree-${g.treeId}">${htmlEsc(g.treeId)}</a></div>`)
+    .map((g) => `<div class="codeRow"><span class="codes">${g.codes.map(htmlEsc).join(', ')}</span> <span class="arrow">→</span> <a href="#tree-${g.treeId}">${htmlEsc(g.treeId)}</a></div>`)
     .join('');
   const airCodes = tipo === 'aire' && CODE_TREE_IDS
     ? groupCodes(CODE_TREE_IDS)
-        .map((g) => `<div class="codeRow"><span class="codes">${g.codes.map(htmlEsc).join(', ')}</span> → <a href="#tree-${g.treeId}">${htmlEsc(g.treeId)}</a></div>`)
+        .map((g) => `<div class="codeRow"><span class="codes">${g.codes.map(htmlEsc).join(', ')}</span> <span class="arrow">→</span> <a href="#tree-${g.treeId}">${htmlEsc(g.treeId)}</a></div>`)
         .join('')
     : '';
   return `
   <div class="prodCard" style="border-top-color:${info.color}">
     <h3>${htmlEsc(info.label)}</h3>
     <div class="chips">${fallaChips}</div>
-    ${codeRows ? `<h4>Códigos de error</h4><div class="codes">${codeRows}</div>` : ''}
-    ${airCodes ? `<h4>Códigos de error (aire)</h4>${airCodes}` : ''}
+    ${codeRows ? `<h4>Códigos de error</h4><div class="codesBox">${codeRows}</div>` : ''}
+    ${airCodes ? `<h4>Códigos de error (aire)</h4><div class="codesBox">${airCodes}</div>` : ''}
   </div>`;
 }).join('\n');
 
 // Flujo de entrada de la app
 const flowEntrada = `flowchart TD
-  classDef qd fill:#EFF6FF,stroke:#145DA0,stroke-width:1.5px,color:#0f172a
-  classDef md fill:#ECFEFF,stroke:#0E7490,stroke-width:1.5px,color:#0f172a
-  classDef ad fill:#FFF7ED,stroke:#B45309,stroke-width:1.5px,color:#0f172a
+  classDef qd fill:#EEF1FF,stroke:#000B8C,stroke-width:1.6px,color:#12124B
+  classDef md fill:#E6F0FC,stroke:#1668C1,stroke-width:1.6px,color:#0E3155
+  classDef ad fill:#FFF8DF,stroke:#C99400,stroke-width:1.6px,color:#4A3800
   A["Nuevo diagnóstico"] --> B["1 · Datos del cliente"] --> C["2 · Tipo de equipo"] --> D["3 · Falla reportada"]
   D --> V["Paso previo · Foto del voltaje"] --> W["Paso previo · Foto del amperaje"]
   W --> P{"¿Compresor Inverter?"}
@@ -253,7 +271,7 @@ const flowEntrada = `flowchart TD
   class P,K qd
   class AR md`;
 
-// Estadísticas global de gifs/etiquetas
+// Estadística de guías visuales
 const guiasCount = Object.values(DECISION_TREES).reduce(
   (acc, t) => acc + Object.values(t).filter((n) => n.gifUri).length, 0);
 
@@ -265,91 +283,203 @@ const html = `<!DOCTYPE html>
 <title>Diagrama de flujo · Árboles de diagnóstico — Línea Blanca Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
-  :root { color-scheme: light; }
+  :root {
+    --k-azul: ${K.azul}; --k-amar: ${K.amarillo}; --k-gris: ${K.gris};
+    --k-texto: ${K.texto}; --k-fondo: ${K.fondo};
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, 'Segoe UI', Roboto, sans-serif; margin: 0; background:#F8FAFC; color:#0f172a; }
-  header { background:#145DA0; color:#fff; padding:24px 28px; }
-  header h1 { margin:0 0 6px; font-size:22px; }
-  header p { margin:0; opacity:.85; font-size:13px; }
-  main { max-width:1180px; margin:0 auto; padding:24px 20px 80px; }
-  .stats { display:flex; gap:12px; flex-wrap:wrap; margin:18px 0; }
-  .statBox { background:#fff; border:1px solid #E2E8F0; border-radius:10px; padding:10px 16px; font-size:13px; }
-  .statBox b { color:#145DA0; font-size:18px; }
-  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; margin:10px 0 4px; }
-  .legend span { display:inline-flex; align-items:center; gap:6px; }
-  .legend i { width:14px; height:14px; border-radius:3px; display:inline-block; border:1.5px solid; }
-  section { background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:18px 20px; margin:18px 0; }
-  h2 { font-size:16px; margin:0 0 2px; }
-  .famcount { font-size:12px; color:#64748B; margin:0 0 10px; }
-  details.tree { border:1px solid #E2E8F0; border-radius:10px; margin:10px 0; background:#FDAFD9; }
-  details.tree { background:#fff; }
-  details.tree > summary { cursor:pointer; padding:12px 14px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; border-radius:10px; }
-  details.tree > summary:hover { background:#F1F5F9; }
-  .tid { font-family: ui-monospace, Menlo, Consolas, monospace; font-size:13px; color:#145DA0; font-weight:700; }
-  .sdesc { font-size:13px; color:#0f172a; flex:1; min-width:200px; }
-  .stat { font-size:11px; color:#64748B; white-space:nowrap; }
-  .graph { overflow:auto; padding:8px 6px 14px; max-height:none; }
-  .mermaid { background:#fff; }
-  .prodCard { background:#fff; border:1px solid #E2E8F0; border-radius:12px; padding:14px 16px; margin:12px 0; border-top-width:4px; }
-  .prodCard h3 { margin:0 0 8px; font-size:14.5px; color:#0f172a; }
-  .prodCard h4 { margin:12px 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:#64748B; }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; }
-  .falla { display:inline-flex; gap:6px; align-items:baseline; background:#F1F5F9; border:1px solid #E2E8F0; border-radius:8px; padding:4px 8px; font-size:12px; }
-  .falla a { font-family: ui-monospace, Menlo, Consolas, monospace; font-size:11px; color:#145DA0; }
-  .codeRow { font-size:12px; padding:2px 0; }
-  .codeRow .codes { font-family: ui-monospace, Menlo, Consolas, monospace; color:#B45309; }
-  .codeRow a { font-family: ui-monospace, Menlo, Consolas, monospace; color:#145DA0; }
-  .toc { display:flex; flex-wrap:wrap; gap:6px; margin:14px 0; }
-  .chip { background:#fff; border:1px solid #BFDBFE; color:#145DA0; border-radius:999px; padding:3px 10px; font-size:11.5px; font-family:ui-monospace,Menlo,monospace; text-decoration:none; }
-  .chip:hover { background:#EFF6FF; }
-  h2.sec { margin-top:30px; }
-  footer { text-align:center; color:#64748B; font-size:12px; padding:30px 0; }
-  .btns { display:flex; gap:8px; margin:10px 0 0; }
-  .btns button { border:1px solid #E2E8F0; background:#fff; border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; }
-  .btns button:hover { background:#F1F5F9; }
-  .note { font-size:12px; color:#64748B; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    margin: 0; background: linear-gradient(180deg, #EDF0F9 0%, var(--k-fondo) 320px, #EDF0F9 100%);
+    color: var(--k-texto);
+  }
+  header {
+    position: sticky; top: 0; z-index: 40;
+    background: linear-gradient(120deg, var(--k-azulProf) 0%, var(--k-azul) 55%, #11168C 100%);
+    color: #fff; padding: 16px 28px 13px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 6px 22px rgba(0, 7, 71, .35);
+    border-bottom: 4px solid var(--k-amar);
+  }
+  .logoBox {
+    background: #fff; border-radius: 10px; padding: 7px 9px;
+    display: flex; align-items: center; box-shadow: 0 3px 10px rgba(0, 7, 71, .4);
+    flex: none;
+  }
+  .logoBox img { height: 42px; display: block; }
+  header h1 { margin: 0 0 3px; font-size: 19px; letter-spacing: .01em; }
+  header p { margin: 0; opacity: .82; font-size: 12.5px; }
+  header .sub { color: var(--k-amar); font-weight: 600; opacity: 1; }
+  main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 0 0 18px; }
+  .statBox {
+    background: #fff; border: 1px solid #E2E6F1; border-radius: 12px; padding: 14px 18px 12px;
+    font-size: 13px; color: #4A4F5C; box-shadow: 0 4px 16px rgba(0, 7, 71, .07);
+    position: relative; overflow: hidden;
+  }
+  .statBox::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--k-amar); }
+  .statBox .num { display: block; font-size: 26px; font-weight: 800; color: var(--k-azul); line-height: 1.15; }
+  .statBox b { color: var(--k-azul); }
+
+  .legend {
+    display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; margin: 4px 0 2px;
+    background: #fff; border: 1px solid #E2E6F1; border-radius: 12px; padding: 10px 16px;
+    box-shadow: 0 4px 16px rgba(0, 7, 71, .07);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; color: #3A3F4D; }
+  .legend i { width: 15px; height: 15px; border-radius: 4px; display: inline-block; border-width: 2px; border-style: solid; flex: none; }
+
+  section {
+    background: #fff; border: 1px solid #E2E6F1; border-radius: 14px;
+    padding: 20px 22px 16px; margin: 22px 0;
+    box-shadow: 0 6px 24px rgba(0, 7, 71, .06);
+  }
+  .secHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .secHead h2 {
+    font-size: 16.5px; margin: 0; color: var(--k-azul);
+    padding-left: 12px; border-left: 5px solid var(--k-amar); line-height: 1.3;
+  }
+  h2.solo {
+    font-size: 16.5px; margin: 0 0 10px; color: var(--k-azul);
+    padding-left: 12px; border-left: 5px solid var(--k-amar);
+  }
+  .secCount, .famcount {
+    font-size: 11.5px; color: #4A4F5C; background: #EEF1FF; border: 1px solid #D5DBF5;
+    padding: 3px 10px; border-radius: 999px; font-weight: 600;
+  }
+
+  details.tree {
+    border: 1px solid #E2E6F1; border-radius: 11px; margin: 12px 0; background: #FCFCFE;
+    overflow: hidden; box-shadow: 0 2px 10px rgba(0, 7, 71, .05);
+    transition: box-shadow .15s ease;
+  }
+  details.tree:hover { box-shadow: 0 4px 18px rgba(0, 7, 71, .10); }
+  details.tree > summary {
+    cursor: pointer; padding: 11px 14px; display: flex; gap: 10px; align-items: center;
+    flex-wrap: wrap; list-style: none;
+  }
+  details.tree > summary::-webkit-details-marker { display: none; }
+  details.tree > summary::before {
+    content: ''; width: 8px; height: 8px; border-right: 2.4px solid var(--k-azul);
+    border-bottom: 2.4px solid var(--k-azul); transform: rotate(-45deg);
+    transition: transform .15s ease; flex: none; margin-top: -4px;
+  }
+  details.tree[open] > summary::before { transform: rotate(45deg); margin-top: 2px; }
+  details.tree > summary:hover { background: #EEF1FF; }
+  details.tree[open] > summary { border-bottom: 1px solid #E7EAF4; background: #EEF1FF; border-radius: 10px 10px 0 0; }
+  .tid {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; font-weight: 700;
+    color: var(--k-azul); background: #FFF7D9; border: 1px solid #F0DFA0;
+    padding: 3px 9px; border-radius: 7px; white-space: nowrap;
+  }
+  .sdesc { font-size: 13px; color: var(--k-texto); flex: 1; min-width: 220px; font-weight: 500; }
+  .stat { font-size: 11px; color: #7A7F8C; white-space: nowrap; }
+
+  .graph { overflow: auto; padding: 10px 8px 16px; }
+  .mermaid { background: #fff; }
+
+  .prodCard {
+    background: #FCFCFE; border: 1px solid #E2E6F1; border-radius: 13px;
+    padding: 14px 18px 14px; margin: 14px 0; border-top-width: 5px;
+    box-shadow: 0 4px 14px rgba(0, 7, 71, .06);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .prodCard:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0, 7, 71, .11); }
+  .prodCard h3 { margin: 0 0 10px; font-size: 14.5px; color: var(--k-azul); letter-spacing: .01em; }
+  .prodCard h4 {
+    margin: 14px 0 6px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em;
+    color: #7A7F8C; border-top: 1px dashed #E2E6F1; padding-top: 10px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .falla {
+    display: inline-flex; gap: 8px; align-items: baseline;
+    background: #fff; border: 1px solid #E2E6F1; border-radius: 9px; padding: 5px 10px;
+    font-size: 12px; box-shadow: 0 1px 4px rgba(0, 7, 71, .05);
+  }
+  .falla a {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: var(--k-azul);
+    text-decoration: none; border-bottom: 1.5px solid var(--k-amar); font-weight: 600;
+  }
+  .falla a:hover { color: var(--k-azulHover); }
+  .codeRow { font-size: 12px; padding: 3px 0; color: #4A4F5C; }
+  .codeRow .codes { font-family: ui-monospace, Menlo, Consolas, monospace; color: #8A6400; font-weight: 600; }
+  .codeRow .arrow { color: var(--k-azul); padding: 0 2px; }
+  .codeRow a {
+    font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--k-azul); font-weight: 700;
+    text-decoration: none; border-bottom: 1.5px solid var(--k-amar);
+  }
+  .codesBox { columns: 2 340px; column-gap: 28px; }
+
+  .toc { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 2px; }
+  .chip {
+    background: #fff; border: 1px solid #D5DBF5; color: var(--k-azul); border-radius: 999px;
+    padding: 4px 12px; font-size: 11.5px; font-family: ui-monospace, Menlo, monospace;
+    text-decoration: none; box-shadow: 0 1px 3px rgba(0, 7, 71, .06); transition: background .12s ease;
+  }
+  .chip:hover { background: var(--k-amar); border-color: var(--k-amar); color: var(--k-gris); }
+
+  .btns { display: flex; gap: 10px; margin-top: 14px; }
+  .btns button {
+    border: none; background: var(--k-azul); color: #fff; border-radius: 9px; padding: 8px 18px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; letter-spacing: .02em;
+    box-shadow: 0 3px 10px rgba(0, 7, 71, .25); transition: background .12s ease;
+  }
+  .btns button:hover { background: var(--k-azulHover); }
+  .btns button.sec { background: #fff; color: var(--k-azul); border: 1.5px solid #D5DBF5; box-shadow: 0 2px 6px rgba(0, 7, 71, .08); }
+  .btns button.sec:hover { background: var(--k-amar); border-color: var(--k-amar); color: var(--k-gris); }
+
+  .note { font-size: 12px; color: #6A6F7C; margin-top: 10px; }
+  footer {
+    text-align: center; color: #6A6F7C; font-size: 12px; padding: 26px 0 34px;
+    border-top: 3px solid var(--k-amar); margin-top: 40px; background: #fff;
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>🌲 Diagrama de flujo · Árboles de diagnóstico</h1>
-  <p>Línea Blanca Pro v2.0 — generado automáticamente desde <code>constants/</code> (scripts/generar-diagrama.cjs). Cada tarjeta equivale al árbol real que navega la app.</p>
+  <div class="logoBox"><img src="data:image/svg+xml;base64,${KALLEY_LOGO}" alt="Kalley"/></div>
+  <div>
+    <h1>Diagrama de flujo · Árboles de diagnóstico</h1>
+    <p><span class="sub">Línea Blanca Pro v2.0</span> — generado automáticamente desde <code>constants/</code> (scripts/generar-diagrama.cjs). Cada desplegable contiene el árbol real que navega la app.</p>
+  </div>
 </header>
 <main>
   <div class="stats">
-    <div class="statBox"><b>${statsTrees}</b> árboles</div>
-    <div class="statBox"><b>${statsNodes}</b> nodos totales</div>
-    <div class="statBox"><b>${statsResults}</b> diagnósticos finales (resultados)</div>
-    <div class="statBox"><b>${guiasCount}</b> pasos con guía visual 🎬</div>
+    <div class="statBox"><span class="num">${statsTrees}</span> árboles de diagnóstico</div>
+    <div class="statBox"><span class="num">${statsNodes}</span> nodos totales</div>
+    <div class="statBox"><span class="num">${statsResults}</span> diagnósticos finales (resultados)</div>
+    <div class="statBox"><span class="num">${guiasCount}</span> pasos con guía visual (GIF/WebP)</div>
   </div>
   <div class="legend">
-    <span><i style="background:#EFF6FF;border-color:#145DA0"></i> Pregunta</span>
-    <span><i style="background:#ECFEFF;border-color:#0E7490"></i> Medición técnica</span>
-    <span><i style="background:#FFF7ED;border-color:#B45309"></i> Acción / procedimiento</span>
-    <span><i style="background:#F5F3FF;border-color:#7C3AED"></i> Evidencia fotográfica</span>
-    <span><i style="background:#ECFDF5;border-color:#047857"></i> Resultado con probabilidades</span>
-    <span><i style="background:#FEF9C3;border-color:#A16207;border-style:dashed"></i> Gate automático (anti-re-pregunta)</span>
-    <span><i style="background:#fff;border-color:#64748B;border-style:dashed"></i> Rama compartida del nodo Inverter</span>
+    <span><i style="background:#EEF1FF;border-color:#000B8C"></i> Pregunta</span>
+    <span><i style="background:#E6F0FC;border-color:#1668C1"></i> Medición técnica</span>
+    <span><i style="background:#FFF8DF;border-color:#C99400"></i> Acción / procedimiento</span>
+    <span><i style="background:#F3F4F6;border-color:#373435"></i> Evidencia fotográfica</span>
+    <span><i style="background:#EAF7F0;border-color:#0B8A4E"></i> Resultado con probabilidades</span>
+    <span><i style="background:#FFFBEB;border-color:#C99400;border-style:dashed"></i> Gate automático (anti-re-pregunta)</span>
+    <span><i style="background:#fff;border-color:#6B7080;border-style:dashed"></i> Rama compartida del nodo Inverter</span>
   </div>
 
   <section>
-    <h2>Flujo de entrada de la app (hasta llegar al árbol)</h2>
+    <h2 class="solo">Flujo de entrada de la app (hasta llegar al árbol)</h2>
     <div class="graph"><pre class="mermaid eager">${htmlEsc(flowEntrada)}</pre></div>
-    <p class="note">Tras elegir la falla (y el código, si lo hay), la app entra al árbol correspondiente. Los nodos marcados ⏭ son gates: se responden solos con la información ya dada.</p>
+    <p class="note">Los nodos amarillos con borde punteado son gates: se responden solos con la información ya dada y evitan volver a preguntar lo mismo.</p>
   </section>
 
   <section>
-    <h2>Mapa general: producto → falla o código → árbol</h2>
-    <p class="note">Las flechas no aplican: aquí cada chip lleva (clicando) al diagrama del árbol.</p>
+    <h2 class="solo">Mapa general: producto → falla o código → árbol</h2>
+    <p class="note" style="margin-top:0">Cada chip enlaza (clic o toque) al diagrama del árbol correspondiente.</p>
     ${prodCards}
   </section>
 
   <section>
-    <h2>Índice de árboles</h2>
+    <h2 class="solo">Índice de árboles</h2>
     <div class="toc">${tocChips}</div>
     <div class="btns">
       <button onclick="expandAll(true)">Expandir todo</button>
-      <button onclick="expandAll(false)">Contraer todo</button>
+      <button class="sec" onclick="expandAll(false)">Contraer todo</button>
     </div>
   </section>
 
