@@ -1,5 +1,4 @@
 import type { DiagnosticTree } from '@/types/diagnostico';
-import { INVERTER_TREE } from '@/constants/arbol_inverter';
 
 // ══════════════════════════════════════════════════════════════════════════
 // Árboles base de lavadora/secadora por síntoma (migrados de arboles.ts).
@@ -431,17 +430,7 @@ export const NOSECA: DiagnosticTree = {
     text: 'Medir continuidad del motor de la secadora y revisar la correa del tambor',
     detail: 'La mayoría de secadoras usan correa (belt) para mover el tambor. Inspeccionar visualmente si la correa está rota, desgastada o fuera de lugar. Medir continuidad de los devanados del motor.',
     tip: 'Un motor sin correa gira sin carga y hace un zumbido corto — la correa rota es la causa más común de tambor parado.',
-    nextId: 'gate_inverter_secadora',
-  },
-  gate_inverter_secadora: {
-    id: 'gate_inverter_secadora', type: 'question',
-    text: '¿El compresor del equipo es tecnología Inverter?',
-    detail: 'Algunas secadoras premium y lavadoras-secadoras usan compresor inverter en su bomba de calor. Verifica la placa o el manual del equipo.',
-    tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor y frecuencia variable audible al operar.',
-    options: [
-      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
-      { label: 'No, es compresor convencional', nextId: 'result_motor_secadora', color: 'success' },
-    ],
+    nextId: 'result_motor_secadora',
   },
   result_motor_secadora: {
     id: 'result_motor_secadora', type: 'result',
@@ -550,8 +539,6 @@ export const NOSECA: DiagnosticTree = {
       parts: ['Blower wheel / ventilador de circulación', 'Motor del ventilador'],
     },
   },
-  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_secadora)
-  ...INVERTER_TREE,
 };;
 
 

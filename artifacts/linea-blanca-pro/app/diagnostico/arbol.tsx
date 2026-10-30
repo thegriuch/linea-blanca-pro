@@ -103,7 +103,7 @@ export default function ArbolScreen() {
   const [voltajeUri, setVoltajeUri] = useState<string | null>(null);
   const [amperajeListo, setAmperajeListo] = useState(false);
   const [amperajeUri, setAmperajeUri] = useState<string | null>(null);
-  // ETAPA 0b — ¿Es tecnología Inverter? (siempre, tras voltaje y amperaje)
+  // ETAPA 0b — tecnología Inverter (solo para equipos con compresor)
   const [inverterListo, setInverterListo] = useState(false);
   const [esInverter, setEsInverter] = useState<boolean | null>(null);
   // ETAPA 0d — Toma de voltaje en la salida de la tarjeta Inverter (solo si es Inverter)
@@ -121,6 +121,15 @@ export default function ArbolScreen() {
   const [hiddenGifKey, setHiddenGifKey] = useState<string | null>(null);
   // ETAPA 3 — Evidencia final de la falla (antes del informe de probabilidades)
   const [finalEvidenceUri, setFinalEvidenceUri] = useState<string | null>(null);
+
+  const equipoSinCompresor = currentSession?.equipo.tipo === 'lavadora'
+    || currentSession?.equipo.tipo === 'secadora';
+  useEffect(() => {
+    if (!equipoSinCompresor || equipoFalla === '__error__') return;
+    setInverterListo(true);
+    setEsInverter(false);
+    setErrorListo(true);
+  }, [equipoSinCompresor, equipoFalla]);
 
   if (!currentSession) {
     router.replace('/diagnostico/nuevo');
@@ -319,6 +328,11 @@ export default function ArbolScreen() {
     if (!voltajeListo) { router.back(); return; }
     // Etapa 0b: amperaje
     if (!amperajeListo) { setVoltajeListo(false); return; }
+    if (equipoSinCompresor && equipoFalla !== '__error__' && path.length === 0) {
+      setAmperajeListo(false);
+      setAmperajeUri(null);
+      return;
+    }
     // Etapa 0c: pregunta inverter
     if (!inverterListo) { setAmperajeListo(false); return; }
     // Etapa 0d: toma de voltaje en la salida de la tarjeta Inverter (solo si es Inverter)
@@ -355,10 +369,10 @@ export default function ArbolScreen() {
   const stepsTotal = path.length
     + (voltajeListo ? 1 : 0)
     + (amperajeListo ? 1 : 0)
-    + (inverterListo ? 1 : 0)
-    + (inverterListo && esInverter ? 1 : 0)
-    + (inverterListo && esInverter && tieneError ? 1 : 0)
-    + (errorListo ? 1 : 0);
+    + (!equipoSinCompresor && inverterListo ? 1 : 0)
+    + (!equipoSinCompresor && inverterListo && esInverter ? 1 : 0)
+    + (!equipoSinCompresor && inverterListo && esInverter && tieneError ? 1 : 0)
+    + ((!equipoSinCompresor || equipoFalla === '__error__') && errorListo ? 1 : 0);
   const progressPct: `${number}%` = `${Math.min(100, Math.max(4, stepsTotal * 7))}%`;
 
   // ══════════════════════════════════════════════════════════════════════════

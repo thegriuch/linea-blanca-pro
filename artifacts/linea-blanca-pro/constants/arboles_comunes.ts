@@ -8,17 +8,11 @@ import { INVERTER_TREE } from '@/constants/arbol_inverter';
 
 export const NOENCIENDE: DiagnosticTree = {
   start: {
-    id: 'start', type: 'measure',
-    text: 'Verificar voltaje en la toma eléctrica',
-    detail: 'Mide el voltaje en la toma con multímetro. El voltaje debe estar dentro del ±10% del nominal (110V o 220V según equipo).',
-    nextId: 'hay_voltaje',
-  },
-  hay_voltaje: {
-    id: 'hay_voltaje', type: 'question',
-    text: '¿Hay voltaje correcto en la toma eléctrica?',
+    id: 'start', type: 'question',
+    text: '¿El voltaje de la toma, medido en el paso inicial, está dentro del rango nominal del equipo?',
     options: [
       { label: 'No hay voltaje o es incorrecto', nextId: 'result_sin_voltaje', color: 'danger' },
-      { label: 'Sí, voltaje correcto', nextId: 'ev_voltaje', color: 'success' },
+      { label: 'Sí, voltaje correcto', nextId: 'gate_inverter_noenciende', color: 'success' },
     ],
   },
   result_sin_voltaje: {
@@ -33,12 +27,6 @@ export const NOENCIENDE: DiagnosticTree = {
       recommendation: 'Verificar panel eléctrico. Revisar breaker del circuito. Si el problema persiste, contactar electricista.',
       parts: ['Breaker / fusible'],
     },
-  },
-  ev_voltaje: {
-    id: 'ev_voltaje', type: 'evidence',
-    text: 'Registrar voltaje medido en toma',
-    evidenceLabel: 'Foto del multímetro con voltaje',
-    nextId: 'gate_inverter_noenciende',
   },
   gate_inverter_noenciende: {
     id: 'gate_inverter_noenciende', type: 'question',
@@ -252,8 +240,8 @@ export const RUIDOEXCESIVO: DiagnosticTree = {
   },
   ruido_compresor: {
     id: 'ruido_compresor', type: 'measure',
-    text: 'Medir amperaje y presiones del compresor en marcha',
-    detail: 'Un compresor ruidoso puede tener alto amperaje (desgaste mecánico) o trabajar contra presiones incorrectas.',
+    text: 'Medir las presiones del compresor en marcha',
+    detail: 'Usa el amperaje registrado al inicio del diagnóstico y mide las presiones de operación. Un compresor ruidoso puede trabajar contra presiones incorrectas.',
     gifUri: 'medicion-compresor-kalley',
     nextId: 'gate_inverter_ruido',
   },
@@ -444,8 +432,6 @@ export const ESCARCHA: DiagnosticTree = {
       parts: ['Empaque de puerta'],
     },
   },
-  // Nodos de tecnología Inverter compartidos (se alcanzan vía gate_inverter_secadora)
-  ...INVERTER_TREE,
 };;
 
 export const CONGELA_NOENFRIA: DiagnosticTree = {

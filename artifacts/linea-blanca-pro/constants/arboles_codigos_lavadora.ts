@@ -617,14 +617,6 @@ const LAV_C8_COM_INVERTER: DiagnosticTree = {
       { label: 'No, el voltaje es correcto', nextId: 'c8_result_inverter', color: 'neutral' },
     ],
   },
-  c8_voltaje_ok: {
-    id: 'c8_voltaje_ok', type: 'question',
-    text: '¿El voltaje en la tarjeta motor está ausente o fuera de rango?',
-    options: [
-      { label: 'Sí, voltaje ausente o fuera de 120 V ±10 %', nextId: 'c8_result_pcb', color: 'danger' },
-      { label: 'No, el voltaje es correcto', nextId: 'c8_result_inverter', color: 'neutral' },
-    ],
-  },
   c8_result_pcb: {
     id: 'c8_result_pcb', type: 'result',
     text: 'C8: la tarjeta PCB no alimenta correctamente la inverter',
@@ -920,14 +912,6 @@ const LAV_E50_INVERTER: DiagnosticTree = {
       { label: 'No, el voltaje es estable y correcto', nextId: 'e50_bobinas', color: 'success' },
     ],
   },
-  e50_voltaje_ok: {
-    id: 'e50_voltaje_ok', type: 'question',
-    text: '¿El voltaje de red está inestable o fuera de 120 V ±10 %?',
-    options: [
-      { label: 'Sí, voltaje inestable o bajo', nextId: 'e50_result_red', color: 'danger' },
-      { label: 'No, el voltaje es estable y correcto', nextId: 'e50_bobinas', color: 'success' },
-    ],
-  },
   e50_result_red: {
     id: 'e50_result_red', type: 'result',
     text: 'E50: voltaje AC inestable hacia la tarjeta inverter',
@@ -1107,14 +1091,6 @@ const LAV_E58_SOBRECARGA: DiagnosticTree = {
       { label: 'No, el voltaje es correcto', nextId: 'e58_result_inverter', color: 'neutral' },
     ],
   },
-  e58_voltaje_ok: {
-    id: 'e58_voltaje_ok', type: 'question',
-    text: '¿El voltaje está fuera de 120 V ±10 %?',
-    options: [
-      { label: 'Sí, voltaje fuera de rango', nextId: 'e58_result_red', color: 'danger' },
-      { label: 'No, el voltaje es correcto', nextId: 'e58_result_inverter', color: 'neutral' },
-    ],
-  },
   e58_result_red: {
     id: 'e58_result_red', type: 'result',
     text: 'E58: alimentación deficiente hacia la inverter',
@@ -1205,14 +1181,6 @@ const LAV_E60_MOTOR: DiagnosticTree = {
     options: [
       { label: 'Sí, recibe voltaje y no gira', nextId: 'e60_result_motor', color: 'danger' },
       { label: 'No llega voltaje o está fuera de rango', nextId: 'e60_result_pcb', color: 'danger' },
-    ],
-  },
-  e60_voltaje_ok: {
-    id: 'e60_voltaje_ok', type: 'question',
-    text: '¿No llega voltaje al motor o está fuera de rango?',
-    options: [
-      { label: 'Sí, sin voltaje correcto', nextId: 'e60_result_pcb', color: 'danger' },
-      { label: 'No, el motor recibe voltaje y no gira', nextId: 'e60_result_motor', color: 'danger' },
     ],
   },
   e60_result_pcb: {

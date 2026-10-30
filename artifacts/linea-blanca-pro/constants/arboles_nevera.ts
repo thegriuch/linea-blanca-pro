@@ -17,7 +17,7 @@ export const NOENFRIA: DiagnosticTree = {
     detail: 'Verifica si hay luz interior al abrir la puerta, o si el display/selector muestra alguna señal de vida. Realiza la verificación inicial de encendido.',
     options: [
       { label: 'No enciende nada', nextId: 'revisar_cables_selector', color: 'danger' },
-      { label: 'Sí, enciende normalmente', nextId: 'ev_corriente', color: 'success' },
+      { label: 'Sí, enciende normalmente', nextId: 'inverter_gate', color: 'success' },
     ],
   },
 
@@ -43,16 +43,7 @@ export const NOENFRIA: DiagnosticTree = {
     },
   },
 
-  // ── SÍ ENCIENDE → verificar corriente al compresor ───────────────────────
-ev_corriente: {
-    id: 'ev_corriente', type: 'evidence',
-    text: 'Verificar corriente al compresor y anexar evidencia',
-    detail: 'Con pinza amperimétrica, mide el amperaje consumido por el compresor durante el intento de arranque. Compara con el valor RLA de la placa.',
-    evidenceLabel: 'Foto del amperaje en compresor (pinza + display)',
-    gifUri: 'medir-amperaje',
-    nextId: 'inverter_gate',
-  },
-  // ── Portón inverter: se pregunta siempre tras voltaje/amperaje ──────────
+  // El amperaje ya se registra en el paso inicial; aquí se interpreta la lectura.
   inverter_gate: {
     gate: 'inverter_si',
     id: 'inverter_gate', type: 'question',
