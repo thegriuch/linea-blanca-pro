@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TREE_IDS_BY_EQUIPO = void 0;
 exports.getCodigoTreeId = getCodigoTreeId;
 // ── NEVERA (reutilizado por nevecon, minibar y dispensadores) ─────────────────
 // 1-5 Flash → árboles dedicados. E6/F6 ventilador refri → árbol dedicado.
@@ -75,7 +76,7 @@ const SECADORA_TREE_IDS = {
     ...LAVADORA_TREE_IDS,
     E22: 'lav_e2_drenaje',
 };
-const TREE_IDS_BY_EQUIPO = {
+exports.TREE_IDS_BY_EQUIPO = {
     nevera: NEVERA_TREE_IDS,
     nevecon: NEVERA_TREE_IDS,
     minibar: NEVERA_TREE_IDS,
@@ -87,7 +88,7 @@ const TREE_IDS_BY_EQUIPO = {
 };
 /** Devuelve el treeId correspondiente a un código de error (no aire), o undefined. */
 function getCodigoTreeId(tipo, codigo) {
-    const map = TREE_IDS_BY_EQUIPO[tipo];
+    const map = exports.TREE_IDS_BY_EQUIPO[tipo];
     if (!map)
         return undefined;
     const limpio = codigo.trim().toUpperCase();

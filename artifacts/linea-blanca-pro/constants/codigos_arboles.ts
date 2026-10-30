@@ -87,7 +87,7 @@ const SECADORA_TREE_IDS: Record<string, string> = {
   E22: 'lav_e2_drenaje',
 };
 
-const TREE_IDS_BY_EQUIPO: Partial<Record<EquipoTipo, Record<string, string>>> = {
+export const TREE_IDS_BY_EQUIPO: Partial<Record<EquipoTipo, Record<string, string>>> = {
   nevera: NEVERA_TREE_IDS,
   nevecon: NEVERA_TREE_IDS,
   minibar: NEVERA_TREE_IDS,
