@@ -391,9 +391,10 @@ const AIRE_SENSORES: DiagnosticTree = {
   start: {
     id: 'start', type: 'evidence',
     text: 'Medir el sensor de temperatura reportado por el código',
-    detail: 'Desconecta el sensor señalado por el código (T1 ambiente interior, T2 serpentín interior, T3 condensador, T4 ambiente exterior o TP descarga del compresor) y mide su resistencia con el multímetro. Compara con la tabla NTC del fabricante a la temperatura ambiente actual. Revisa conector y cableado hasta la tarjeta.',
+    detail: 'Desconecta el sensor señalado por el código (T1 ambiente interior, T2 serpentín interior, T3 condensador, T4 ambiente exterior o TP descarga del compresor) y mide su resistencia con el multímetro. Compara con la tabla de sensores T1/T2/T3/T4 para aire a la temperatura ambiente actual y, si el sensor es TP descarga, con la tabla del sensor TP. Revisa conector y cableado hasta la tarjeta.',
     evidenceLabel: 'Foto de la resistencia del sensor y referencia del código',
-    ntcTable: true,
+    airSensorTable: true,
+    tpTable: true,
     nextId: 'sensores_lectura',
   },
   sensores_lectura: {

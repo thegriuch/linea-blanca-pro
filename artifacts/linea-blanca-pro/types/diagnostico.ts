@@ -44,6 +44,8 @@ export interface TreeNode {
   evidenceLabel?: string;
   gifUri?: string;
   ntcTable?: boolean; // muestra botón para consultar la tabla del sensor de temperatura
+  airSensorTable?: boolean; // muestra el botón de la tabla T1-T4 (aire acondicionado)
+  tpTable?: boolean; // muestra el botón de la tabla del sensor TP (descarga, aire acondicionado)
   /**
    * Gate automático: si la app ya conoce la respuesta (p. ej. el técnico ya
    * indicó en el flujo inicial que el compresor es Inverter), el nodo se salta

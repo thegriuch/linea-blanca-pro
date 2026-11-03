@@ -1036,6 +1036,42 @@ export default function ArbolScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Consulta de la tabla de sensores T1-T4 (aire acondicionado) */}
+      {node.airSensorTable && (
+        <TouchableOpacity
+          onPress={() => router.push('/sensores-temperatura-aire')}
+          activeOpacity={0.75}
+          style={[styles.ntcTableBtn, { backgroundColor: c.card, borderColor: c.primary, borderRadius: colors.radius }]}
+        >
+          <Feather name="thermometer" size={18} color={c.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.ntcTableBtnText, { color: c.primary }]}>Consultar tabla de sensores T1, T2, T3, T4 (aire)</Text>
+            <Text style={[styles.ntcTableBtnHint, { color: c.mutedForeground }]}>
+              Tabla de resistencia para aires: °C, °F y kΩ de -20 °C a 139 °C.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={c.primary} />
+        </TouchableOpacity>
+      )}
+
+      {/* Consulta de la tabla del sensor TP (descarga del compresor) */}
+      {node.tpTable && (
+        <TouchableOpacity
+          onPress={() => router.push('/sensores-temperatura-aire?tabla=tp')}
+          activeOpacity={0.75}
+          style={[styles.ntcTableBtn, { backgroundColor: c.card, borderColor: c.primary, borderRadius: colors.radius }]}
+        >
+          <Feather name="thermometer" size={18} color={c.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.ntcTableBtnText, { color: c.primary }]}>Consultar tabla del sensor TP (descarga)</Text>
+            <Text style={[styles.ntcTableBtnHint, { color: c.mutedForeground }]}>
+              Tabla de resistencia del sensor TP: °C, °F y kΩ de -20 °C a 130 °C.
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={c.primary} />
+        </TouchableOpacity>
+      )}
+
       {/* Evidencia */}
       {node.type === 'evidence' && (
         <View style={styles.evidenceSection}>

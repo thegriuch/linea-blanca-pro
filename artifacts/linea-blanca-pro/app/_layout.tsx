@@ -30,6 +30,7 @@ function RootLayoutNav() {
       <Stack.Screen name="diagnostico/conclusion" options={{ title: 'Conclusión', headerShadowVisible: false }} />
       <Stack.Screen name="diagnostico/resultado/[id]" options={{ title: 'Resultado', headerShadowVisible: false }} />
       <Stack.Screen name="sensores-temperatura/index" options={{ title: 'Tabla del sensor NTC', headerShadowVisible: false }} />
+      <Stack.Screen name="sensores-temperatura-aire/index" options={{ title: 'Tabla de sensores de aire (T1-T4 / TP)', headerShadowVisible: false }} />
       <Stack.Screen name="biblioteca/[category]" options={{ title: 'Biblioteca', headerShadowVisible: false }} />
       <Stack.Screen name="biblioteca/articulo/[id]" options={{ title: 'Artículo', headerShadowVisible: false }} />
     </Stack>

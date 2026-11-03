@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { ReportListItem } from '@/components/ReportListItem';
+import { AppFooter } from '@/components/AppFooter';
 import colors from '@/constants/colors';
 
 const QUICK_ACTIONS = [
@@ -22,7 +23,8 @@ const QUICK_ACTIONS = [
   { icon: 'book-open' as const, label: 'Biblioteca\nTécnica', route: '/(tabs)/biblioteca', color: '#047857' },
   { icon: 'clock' as const, label: 'Ver\nHistorial', route: '/(tabs)/historial', color: '#7C3AED' },
   { icon: 'thermometer' as const, label: 'Regla de\nRefrigerantes', route: '/refrigerantes', color: '#0891B2' },
-  { icon: 'activity' as const, label: 'Sensor de\nTemperatura', route: '/sensores-temperatura', color: '#B45309' },
+  { icon: 'activity' as const, label: 'Sensor de\nTemperatura (NTC)', route: '/sensores-temperatura', color: '#B45309' },
+  { icon: 'thermometer' as const, label: 'Sensor de\nTemperatura (Aire)', route: '/sensores-temperatura-aire', color: '#0D4B8A' },
 ];
 
 export default function HomeScreen() {
@@ -120,6 +122,8 @@ export default function HomeScreen() {
             Sigue el árbol de decisión guiado para reducir errores de diagnóstico y generar reportes técnicos profesionales.
           </Text>
         </View>
+
+        <AppFooter />
       </View>
     </ScrollView>
   );
