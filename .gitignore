@@ -7,6 +7,10 @@ out-tsc
 *.tsbuildinfo
 .expo
 .expo-shared
+static-build
+static-build/
+.tmp-validar
+.tmp-validar/
 
 # dependencies
 node_modules
@@ -27,7 +31,7 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# misc
+# misc & archives
 /.sass-cache
 /connect.lock
 /coverage
@@ -36,6 +40,22 @@ npm-debug.log
 yarn-error.log
 testem.log
 /typings
+*.rar
+*.zip
+*.7z
+*.tar.gz
+.cloud-attachments/
+
+# Native builds
+*.apk
+*.aab
+*.ipa
+android/
+ios/
+
+# Environment
+.env
+.env*.local
 
 # System Files
 .DS_Store

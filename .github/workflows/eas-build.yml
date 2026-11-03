@@ -1,0 +1,116 @@
+name: CI and EAS Build
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        type: choice
+        options: [android, ios, all]
+        default: 'android'
+      profile:
+        description: 'Build profile'
+        type: choice
+        options: [development, preview, production]
+        default: 'preview'
+
+jobs:
+  verify:
+    name: Verify & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.17.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Typecheck project
+        run: |
+          pnpm run typecheck
+
+      - name: Validate decision trees
+        run: |
+          node artifacts/linea-blanca-pro/scripts/ejecutar-validador.cjs
+
+  build:
+    name: Build on EAS
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        platform: ${{ github.event.inputs.platform == 'all' && fromJson('["android", "ios"]') || github.event.inputs.platform == 'android' && fromJson('["android"]') || github.event.inputs.platform == 'ios' && fromJson('["ios"]') || fromJson('["android"]') }}
+        profile: ${{ github.event.inputs.profile || 'preview' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.17.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Setup EAS CLI
+        if: env.EXPO_TOKEN != ''
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Run EAS Build
+        if: env.EXPO_TOKEN != ''
+        working-directory: artifacts/linea-blanca-pro
+        run: |
+          eas build --platform ${{ matrix.platform }} --profile ${{ matrix.profile }} --non-interactive --wait
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Upload build artifact
+        if: success() && env.EXPO_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-build-${{ matrix.platform }}-${{ matrix.profile }}
+          path: artifacts/linea-blanca-pro/**/*.apk
+          if-no-files-found: ignore
+          retention-days: 30
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
