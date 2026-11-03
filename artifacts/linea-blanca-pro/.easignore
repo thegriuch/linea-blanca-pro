@@ -1,0 +1,37 @@
+# Ignore large files and directories not needed for the build
+*.rar
+*.zip
+*.apk
+*.aab
+node_modules/
+dist/
+build/
+.git/
+.gitignore
+*.log
+*.tsbuildinfo
+coverage/
+.nyc_output/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.pem
+*.key
+*.crt
+# Ignore the parent workspace files
+../package.json
+../pnpm-lock.yaml
+../pnpm-workspace.yaml
+../tsconfig.base.json
+../tsconfig.json
+../README.md
+../linea-blanca-pro.zip
+../artifacts/linea-blanca-pro.rar
+../artifacts/api-server/
+../lib/
+../scripts/
+../mockup-sandbox/
