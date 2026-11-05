@@ -57,9 +57,11 @@ jobs:
   build:
     name: Build on EAS
     needs: verify
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     strategy:
       matrix:
         platform: ${{ github.event.inputs.platform == 'all' && fromJson('["android", "ios"]') || github.event.inputs.platform == 'android' && fromJson('["android"]') || github.event.inputs.platform == 'ios' && fromJson('["ios"]') || fromJson('["android"]') }}
@@ -87,30 +89,29 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
 
+      - name: Check Expo Token Secret
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::El secret EXPO_TOKEN no esta configurado en GitHub Secrets."
+            exit 1
+          fi
+
       - name: Setup EAS CLI
-        if: env.EXPO_TOKEN != ''
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Run EAS Build
-        if: env.EXPO_TOKEN != ''
         working-directory: artifacts/linea-blanca-pro
         run: |
           eas build --platform ${{ matrix.platform }} --profile ${{ matrix.profile }} --non-interactive --wait
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Upload build artifact
-        if: success() && env.EXPO_TOKEN != ''
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: eas-build-${{ matrix.platform }}-${{ matrix.profile }}
           path: artifacts/linea-blanca-pro/**/*.apk
           if-no-files-found: ignore
           retention-days: 30
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
