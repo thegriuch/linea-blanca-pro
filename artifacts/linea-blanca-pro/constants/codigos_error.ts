@@ -3,7 +3,6 @@
  * Los códigos pueden variar ligeramente por modelo — siempre confirmar con el manual del equipo.
  */
 import type { EquipoTipo } from '@/types/diagnostico';
-import { CODIGOS_AIRE_MANUAL } from '@/constants/codigos_aire_manual';
 
 export interface CodigoError {
   codigo: string;         // Código exacto como aparece en el equipo
@@ -405,7 +404,7 @@ const NEVERA: CodigoError[] = [
 
 // ── AIRES ACONDICIONADOS ──────────────────────────────────────────────────────
 const AIRE: CodigoError[] = [
- {
+  {
     codigo: 'EC07',
     descripcion: 'Velocidad del ventilador DC exterior fuera de control',
     causas: ['Motor o ventilador DC exterior defectuoso o bloqueado', 'Conector o cableado del motor', 'Alimentación o realimentación anormal', 'PCB exterior o circuito de control del ventilador'],
@@ -887,9 +886,7 @@ const CONGELADOR: CodigoError[] = [
     'Placa del inversor',
   ],
 },
-]
-
-NEVERA;
+];
 const DISPENSADORES: CodigoError[] = NEVERA;
 const NEVECON: CodigoError[] = NEVERA;
 const MINIBAR: CodigoError[] = NEVERA;
