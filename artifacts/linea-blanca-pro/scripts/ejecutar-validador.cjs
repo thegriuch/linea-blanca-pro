@@ -2,9 +2,18 @@
    a archivos .js dentro de .tmp-validar. Uso:
    node scripts/ejecutar-validador.cjs */
 const path = require('node:path');
+const fs = require('node:fs');
+const { execSync } = require('node:child_process');
 const Module = require('node:module');
 
-const COMPILED = path.join(__dirname, '..', '.tmp-validar');
+const APP_DIR = path.join(__dirname, '..');
+const COMPILED = path.join(APP_DIR, '.tmp-validar');
+const TARGET_SCRIPT = path.join(COMPILED, 'scripts', 'validar-arboles.js');
+
+if (!fs.existsSync(TARGET_SCRIPT)) {
+  execSync('npx tsc -p tsconfig.validar.json', { cwd: APP_DIR, stdio: 'inherit' });
+}
+
 const origResolve = Module._resolveFilename;
 
 Module._resolveFilename = function (request, ...args) {
@@ -14,4 +23,4 @@ Module._resolveFilename = function (request, ...args) {
   return origResolve.call(this, request, ...args);
 };
 
-require(path.join(COMPILED, 'scripts', 'validar-arboles.js'));
+require(TARGET_SCRIPT);

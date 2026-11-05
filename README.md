@@ -342,9 +342,8 @@ rompe la app pero sí deja al técnico en un bucle: por eso el validador es obli
 
 ## 10. Códigos de error e IRIS
 
-- `constants/codigos_error.ts`: catálogo por tipo de equipo con `codigo`, `equivalentes`,
-  `descripcion`, `causas`, `solucion` y `partes`. Los códigos de aire vienen del manual en
-  `constants/codigos_aire_manual.ts`.
+- `constants/codigos_error.ts`: catálogo completo por tipo de equipo (incluyendo aire acondicionado)
+  con `codigo`, `equivalentes`, `descripcion`, `causas`, `solucion` y `partes`.
 - `constants/codigos_arboles.ts`: enlaza cada código con su árbol dedicado mediante
   `getCodigoTreeId(tipo, codigo)`; para aire, `getAirErrorTreeId(codigo)`.
 - `constants/iris_codigos.json` + `constants/iris.ts`: 2.720 códigos IRIS (`CI-XXXX`) con falla,
