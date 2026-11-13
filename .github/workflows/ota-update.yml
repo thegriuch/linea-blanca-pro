@@ -63,8 +63,8 @@ jobs:
       - name: Identify Expo account and project
         working-directory: artifacts/linea-blanca-pro
         run: |
-          eas whoami --non-interactive || true
-          eas project:info --non-interactive || true
+          eas whoami --non-interactive
+          eas project:info --non-interactive
 
       - name: Publish OTA update
         working-directory: artifacts/linea-blanca-pro
