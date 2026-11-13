@@ -60,6 +60,12 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Identify Expo account and project
+        working-directory: artifacts/linea-blanca-pro
+        run: |
+          eas whoami --non-interactive || true
+          eas project:info --non-interactive || true
+
       - name: Publish OTA update
         working-directory: artifacts/linea-blanca-pro
         env:
