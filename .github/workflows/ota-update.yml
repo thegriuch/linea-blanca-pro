@@ -11,8 +11,8 @@ on:
       branch:
         description: 'Canal de EAS Update (debe coincidir con el channel del build)'
         type: choice
-        options: [production, preview]
-        default: production
+        options: [preview, production]
+        default: preview
       message:
         description: 'Mensaje del update'
         required: false
@@ -69,7 +69,7 @@ jobs:
       - name: Publish OTA update
         working-directory: artifacts/linea-blanca-pro
         env:
-          UPDATE_BRANCH: ${{ github.event.inputs.branch || 'production' }}
+          UPDATE_BRANCH: ${{ github.event.inputs.branch || 'preview' }}
           UPDATE_MESSAGE: ${{ github.event.inputs.message || github.event.head_commit.message || 'Actualización OTA' }}
         run: |
           MESSAGE=$(printf '%s' "$UPDATE_MESSAGE" | tr '\n' ' ' | cut -c1-200)
