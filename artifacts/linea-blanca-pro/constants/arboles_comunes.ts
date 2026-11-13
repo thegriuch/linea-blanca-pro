@@ -29,12 +29,13 @@ export const NOENCIENDE: DiagnosticTree = {
     },
   },
   gate_inverter_noenciende: {
+    gate: 'inverter_si',
     id: 'gate_inverter_noenciende', type: 'question',
     text: '¿El compresor del equipo es tecnología Inverter?',
     detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
     tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
     options: [
-      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'Sí, es tecnología Inverter', nextId: 'medir_senal', color: 'neutral' },
       { label: 'No, es compresor convencional', nextId: 'revisar_cable', color: 'success' },
     ],
   },
@@ -49,8 +50,86 @@ export const NOENCIENDE: DiagnosticTree = {
     text: '¿El cable y clavija están en buen estado?',
     options: [
       { label: 'No, hay falla en cable', nextId: 'result_cable', color: 'danger' },
-      { label: 'Sí, están bien', nextId: 'result_tarjeta', color: 'success' },
+      { label: 'Sí, están bien', nextId: 'noenciende_voltaje_tarjeta', color: 'success' },
     ],
+  },
+  noenciende_voltaje_tarjeta: {
+    id: 'noenciende_voltaje_tarjeta', type: 'measure',
+    text: 'Medir el voltaje en la entrada de la tarjeta de control',
+    detail: 'Con el equipo conectado y el interruptor en encendido, mide entre L y N en el conector de alimentación de la tarjeta. Debe llegar el voltaje nominal de la red (120 V ±10 % o 220 V ±10 %). Verifica también el fusible o protector térmico interno de la tarjeta.',
+    tip: 'Mide en el conector, no en el cable: un terminal flojo puede dar voltaje en vacío y caer al conectar la carga.',
+    evidenceLabel: 'Foto de la medición de voltaje en el conector de la tarjeta',
+    nextId: 'noenciende_voltaje_ok',
+  },
+  noenciende_voltaje_ok: {
+    id: 'noenciende_voltaje_ok', type: 'question',
+    text: '¿Llega el voltaje nominal a la entrada de la tarjeta?',
+    options: [
+      { label: 'No llega voltaje a la tarjeta', nextId: 'noenciende_interruptor', color: 'danger' },
+      { label: 'Sí llega, pero el equipo no enciende', nextId: 'noenciende_panel', color: 'success' },
+    ],
+  },
+  noenciende_interruptor: {
+    id: 'noenciende_interruptor', type: 'measure',
+    text: 'Verificar interruptor de puerta, selector y protector térmico en serie',
+    detail: 'Revisa continuidad del interruptor de puerta/luz, del selector de funciones y del protector térmico o fusible interno. Cualquiera de ellos abierto corta la alimentación a la tarjeta aunque la toma tenga voltaje.',
+    evidenceLabel: 'Foto de la continuidad de interruptor/selector y del fusible interno',
+    nextId: 'noenciende_interruptor_ok',
+  },
+  noenciende_interruptor_ok: {
+    id: 'noenciende_interruptor_ok', type: 'question',
+    text: '¿Algún interruptor, selector o fusible interno está abierto?',
+    options: [
+      { label: 'Sí, hay un componente abierto', nextId: 'result_interruptor', color: 'danger' },
+      { label: 'No, todos dan continuidad', nextId: 'result_cableado_alimentacion', color: 'neutral' },
+    ],
+  },
+  noenciende_panel: {
+    id: 'noenciende_panel', type: 'question',
+    text: '¿El display o panel de control muestra alguna señal al energizar?',
+    options: [
+      { label: 'Sí, enciende pero no arranca', nextId: 'result_tarjeta', color: 'neutral' },
+      { label: 'No, apagado total', nextId: 'result_fuente_tarjeta', color: 'danger' },
+    ],
+  },
+  result_interruptor: {
+    id: 'result_interruptor', type: 'result',
+    text: 'Interruptor, selector o fusible interno abierto',
+    result: {
+      causes: [
+        { cause: 'Interruptor de puerta abierto o defectuoso', probability: 45 },
+        { cause: 'Fusible o protector térmico interno abierto', probability: 35 },
+        { cause: 'Selector de funciones con contactos abiertos', probability: 20 },
+      ],
+      recommendation: 'Reemplazar el componente abierto. Si el fusible térmico está abierto, revisar la causa del sobrecalentamiento antes de instalar el repuesto: un fusible nuevo se abre de nuevo si el problema persiste.',
+      parts: ['Interruptor de puerta', 'Fusible térmico', 'Selector de funciones'],
+    },
+  },
+  result_cableado_alimentacion: {
+    id: 'result_cableado_alimentacion', type: 'result',
+    text: 'Cableado de alimentación de la tarjeta interrumpido',
+    result: {
+      causes: [
+        { cause: 'Cable o terminal del arnés de alimentación abierto', probability: 55 },
+        { cause: 'Conector de la tarjeta con pin quemado o flojo', probability: 30 },
+        { cause: 'Punto de unión o bornera con falso contacto', probability: 15 },
+      ],
+      recommendation: 'Medir continuidad del arnés tramo por tramo hasta la tarjeta. Reparar terminales y bornera; si el conector está quemado, reemplazar el conector y verificar la carga que lo calentó.',
+      parts: ['Arnés de alimentación', 'Conector de tarjeta'],
+    },
+  },
+  result_fuente_tarjeta: {
+    id: 'result_fuente_tarjeta', type: 'result',
+    text: 'Tarjeta sin respuesta con alimentación presente',
+    result: {
+      causes: [
+        { cause: 'Fuente conmutada de la tarjeta dañada (sin 5 V/12 V internos)', probability: 55 },
+        { cause: 'Tarjeta principal bloqueada o con firmware corrupto', probability: 30 },
+        { cause: 'Display desconectado o quemado (equipo opera sin mostrar)', probability: 15 },
+      ],
+      recommendation: 'Verificar las tensiones internas de la tarjeta (5 V y 12 V) en el conector del display. Si no hay tensiones, reemplazar la tarjeta; si hay tensiones y el display no responde, probar con un display conocido bueno.',
+      parts: ['Tarjeta de control', 'Display / panel'],
+    },
   },
   result_cable: {
     id: 'result_cable', type: 'result',
@@ -88,6 +167,9 @@ export const ERRORELECTRONICO: DiagnosticTree = {
   // directo al diagnóstico correspondiente.
   start: {
     id: 'start', type: 'question',
+    // Si el código ya se validó en el flujo inicial (E7/F7/CE), no se vuelve a
+    // preguntar por el código: el gate entra directo a la rama de comunicación.
+    gate: 'codigo_si',
     text: '¿El código registrado corresponde a una falla de comunicación entre tarjetas?',
     detail: 'Códigos típicos de comunicación: CE, E7, F7, EC, Err, Com, 13 FLASH. Si el código es de sensor o de compresor, entra por la rama correspondiente. Esta pantalla no repite la validación del código: ya la hiciste al iniciar el diagnóstico.',
     options: [
@@ -201,28 +283,45 @@ export const FUGA_AGUA: DiagnosticTree = {
     },
   },
   fuga_trasera: {
-    id: 'fuga_trasera', type: 'result',
-    text: 'Fuga en conexiones traseras / mangueras',
-    result: {
-      causes: [
-        { cause: 'Manguera de suministro de agua deteriorada', probability: 60 },
-        { cause: 'Unión de manguera con fuga', probability: 30 },
-        { cause: 'Válvula de paso con fuga', probability: 10 },
-      ],
-      recommendation: 'Revisar todas las mangueras de agua en la parte trasera. Asegurar conexiones. Reemplazar mangueras deterioradas.',
-      parts: ['Manguera de entrada', 'Acoples'],
-    },
+    id: 'fuga_trasera', type: 'measure',
+    text: 'Secar la zona y revisar mangueras, acoples y válvula de paso',
+    detail: 'Seca bien la parte trasera, coloca papel o cartón bajo las conexiones y pon el equipo en funcionamiento. Revisa manguera de entrada, acoples y válvula de paso. Una fuga que solo aparece en la bandeja del compresor apunta al drenaje de descongelamiento, no a la hidráulica.',
+    evidenceLabel: 'Foto de la zona seca y del punto exacto donde aparece el agua',
+    nextId: 'fuga_trasera_ok',
+  },
+  fuga_trasera_ok: {
+    id: 'fuga_trasera_ok', type: 'question',
+    text: '¿Dónde aparece el agua?',
+    options: [
+      { label: 'En manguera, acople o válvula de paso', nextId: 'result_manguera', color: 'danger' },
+      { label: 'En la bandeja del compresor (parte baja trasera)', nextId: 'result_descongelamiento', color: 'neutral' },
+    ],
   },
   fuga_interior: {
-    id: 'fuga_interior', type: 'result',
-    text: 'Fuga interior — acumulación de agua dentro del compartimiento',
+    id: 'fuga_interior', type: 'measure',
+    text: 'Revisar el canal de drenaje del evaporador y la bandeja interior',
+    detail: 'Desmonta la tapa del evaporador y verifica que el canal y la manguera de drenaje estén libres. Vierte un poco de agua en el canal: debe salir por la parte trasera sin estancarse. Revisa también si el hielo del evaporador desborda el canal.',
+    evidenceLabel: 'Foto del canal de drenaje y de la prueba de vertido',
+    nextId: 'fuga_interior_ok',
+  },
+  fuga_interior_ok: {
+    id: 'fuga_interior_ok', type: 'question',
+    text: '¿El agua se estanca o desborda del canal de drenaje?',
+    options: [
+      { label: 'Sí, el canal está tapado o desborda', nextId: 'result_descongelamiento', color: 'danger' },
+      { label: 'No, el drenaje está libre y el agua viene de otra parte', nextId: 'result_fuga_interior', color: 'neutral' },
+    ],
+  },
+  result_fuga_interior: {
+    id: 'result_fuga_interior', type: 'result',
+    text: 'Fuga interior con drenaje libre',
     result: {
       causes: [
-        { cause: 'Canal de drenaje del evaporador tapado', probability: 50 },
-        { cause: 'Bandeja de drenaje rota', probability: 25 },
-        { cause: 'Empaque de puerta dañado (entrada de humedad excesiva)', probability: 25 },
+        { cause: 'Empaque de puerta dañado (condensación excesiva)', probability: 50 },
+        { cause: 'Bandeja de drenaje rota o desplazada', probability: 30 },
+        { cause: 'Exceso de escarcha en el evaporador que desborda', probability: 20 },
       ],
-      recommendation: 'Revisar y limpiar el drenaje del evaporador. Verificar el estado de los empaques de puerta. Inspeccionar bandeja de drenaje.',
+      recommendation: 'Revisar el empaque con la prueba del papel y la bandeja de drenaje. Si el evaporador está escarchado, validar el ciclo de deshielo antes de cerrar el caso.',
       parts: ['Empaque de puerta', 'Bandeja de drenaje'],
     },
   },
@@ -246,12 +345,13 @@ export const RUIDOEXCESIVO: DiagnosticTree = {
     nextId: 'gate_inverter_ruido',
   },
   gate_inverter_ruido: {
+    gate: 'inverter_si',
     id: 'gate_inverter_ruido', type: 'question',
     text: '¿El compresor del equipo es tecnología Inverter?',
     detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
     tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
     options: [
-      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'Sí, es tecnología Inverter', nextId: 'medir_senal', color: 'neutral' },
       { label: 'No, es compresor convencional', nextId: 'result_compresor_ruido', color: 'success' },
     ],
   },
@@ -344,9 +444,112 @@ export const CONGELAMUCHO: DiagnosticTree = {
     id: 'start', type: 'question',
     text: '¿El termostato / control permite ajustar la temperatura y el compresor cicla (encendido/apagado)?',
     options: [
-      { label: 'No cicla — compresor corre siempre', nextId: 'result_termostato_fijo', color: 'danger' },
-      { label: 'Sí cicla pero igual congela', nextId: 'result_ajuste', color: 'neutral' },
+      { label: 'No cicla — compresor corre siempre', nextId: 'congela_medir_termostato', color: 'danger' },
+      { label: 'Sí cicla pero igual congela', nextId: 'congela_medir_temperatura', color: 'neutral' },
     ],
+  },
+  congela_medir_termostato: {
+    id: 'congela_medir_termostato', type: 'measure',
+    text: 'Medir el termostato desenergizado (continuidad en frío y con el bulbo enfriado)',
+    detail: 'Desconecta el termostato y mide continuidad entre sus terminales: debe cerrar (0 Ω) a temperatura ambiente y abrir (OL) cuando el bulbo se enfría en agua con hielo. Gira el dial de mínimo a máximo y confirma que los contactos cambian de estado.',
+    tip: 'Si nunca abre, el compresor queda energizado permanentemente y el evaporador termina escarchado. Compara la referencia del termostato con el catálogo del modelo.',
+    evidenceLabel: 'Foto del termostato y de la medición de continuidad (cerrado y abierto)',
+    nextId: 'congela_termostato_ok',
+  },
+  congela_termostato_ok: {
+    id: 'congela_termostato_ok', type: 'question',
+    text: '¿El termostato abre el circuito cuando alcanza la temperatura de corte?',
+    options: [
+      { label: 'No, los contactos quedan cerrados siempre', nextId: 'result_termostato_fijo', color: 'danger' },
+      { label: 'Sí abre, pero el equipo sigue congelando', nextId: 'congela_medir_ntc', color: 'success' },
+    ],
+  },
+  congela_medir_ntc: {
+    id: 'congela_medir_ntc', type: 'measure',
+    text: 'Medir el sensor NTC del refrigerador y comparar con la tabla del fabricante',
+    detail: 'Mide el NTC a temperatura ambiente y contrástalo con la tabla del modelo (por ejemplo 10 kΩ a 25 °C, 5 kΩ a 10 °C). Revisa también que el sensor esté en su clip y no desplazado cerca del evaporador.',
+    tip: 'Un NTC deriva con los años: la lectura puede parecer creíble y aun así estar 3–5 °C fuera, suficiente para que el control enfríe de más.',
+    evidenceLabel: 'Foto de la lectura del NTC junto a la tabla de referencia',
+    nextId: 'congela_ntc_ok',
+  },
+  congela_ntc_ok: {
+    id: 'congela_ntc_ok', type: 'question',
+    text: '¿La lectura del NTC está fuera de la tabla o el sensor está desplazado?',
+    options: [
+      { label: 'Sí, descalibrado o fuera de posición', nextId: 'result_sensor_descalibrado', color: 'danger' },
+      { label: 'No, lectura y posición correctas', nextId: 'congela_medir_temperatura', color: 'success' },
+    ],
+  },
+  congela_medir_temperatura: {
+    id: 'congela_medir_temperatura', type: 'measure',
+    text: 'Medir la temperatura real del compartimiento con termómetro',
+    detail: 'Coloca un termómetro en el centro del compartimiento de refrigeración, con el equipo estabilizado (mínimo 2 horas sin abrir). El rango esperado es 2–7 °C. Registra también la temperatura del congelador.',
+    tip: 'No midas con el termómetro pegado a la pared ni al evaporador: mide el aire en el centro del compartimiento.',
+    evidenceLabel: 'Foto del termómetro en el compartimiento y de la temperatura seleccionada',
+    nextId: 'congela_temperatura_ok',
+  },
+  congela_temperatura_ok: {
+    id: 'congela_temperatura_ok', type: 'question',
+    text: '¿La temperatura real del compartimiento está por debajo de 2 °C?',
+    options: [
+      { label: 'Sí, está por debajo de 2 °C', nextId: 'congela_medir_presion', color: 'danger' },
+      { label: 'No, está en rango o por encima', nextId: 'result_ajuste', color: 'neutral' },
+    ],
+  },
+  congela_medir_presion: {
+    id: 'congela_medir_presion', type: 'measure',
+    text: 'Medir presión de succión y amperaje del compresor con el sistema estabilizado',
+    detail: 'Con el compresor en régimen, mide la presión de succión y el amperaje y compáralos con la placa del equipo. Presión de succión alta con amperaje por encima de placa indica sobrecarga de refrigerante; presión y amperaje normales descartan el sistema y apuntan al control.',
+    tip: 'Si el evaporador está totalmente escarchado, descongela antes de medir: la escarcha falsea la presión y el amperaje.',
+    evidenceLabel: 'Foto del manómetro y de la pinza amperimétrica junto a la placa',
+    nextId: 'congela_presion_ok',
+  },
+  congela_presion_ok: {
+    id: 'congela_presion_ok', type: 'question',
+    text: '¿La presión de succión es alta y el amperaje supera el de placa?',
+    options: [
+      { label: 'Sí, sobrecarga de refrigerante', nextId: 'result_sobrecarga', color: 'danger' },
+      { label: 'No, presión y amperaje en rango', nextId: 'result_control_temperatura', color: 'neutral' },
+    ],
+  },
+  result_sensor_descalibrado: {
+    id: 'result_sensor_descalibrado', type: 'result',
+    text: 'Sensor de temperatura descalibrado o desplazado',
+    result: {
+      causes: [
+        { cause: 'NTC descalibrado (deriva con la temperatura)', probability: 60 },
+        { cause: 'Sensor fuera de su clip o pegado al evaporador', probability: 30 },
+        { cause: 'Conector del sensor con resistencia de contacto', probability: 10 },
+      ],
+      recommendation: 'Reemplazar el NTC y confirmar la lectura contra la tabla a dos temperaturas distintas. Ubicarlo en su clip original y verificar el conector.',
+      parts: ['Sensor NTC'],
+    },
+  },
+  result_sobrecarga: {
+    id: 'result_sobrecarga', type: 'result',
+    text: 'Sistema sobrecargado de refrigerante',
+    result: {
+      causes: [
+        { cause: 'Carga de refrigerante por encima de la especificada', probability: 65 },
+        { cause: 'Restricción en el capilar que eleva la presión de succión', probability: 20 },
+        { cause: 'Condensador con flujo de aire insuficiente', probability: 15 },
+      ],
+      recommendation: 'Recuperar el refrigerante, hacer vacío y cargar por peso según la placa. Verificar el flujo de aire del condensador antes de liberar el equipo.',
+      parts: ['Carga de refrigerante', 'Filtro secante'],
+    },
+  },
+  result_control_temperatura: {
+    id: 'result_control_temperatura', type: 'result',
+    text: 'Control de temperatura con consigna o histéresis fuera de rango',
+    result: {
+      causes: [
+        { cause: 'Consigna de temperatura en el mínimo con ambiente frío', probability: 45 },
+        { cause: 'Tarjeta de control con histéresis o lectura alterada', probability: 40 },
+        { cause: 'Damper o difusor de aire obstruido (frío concentrado)', probability: 15 },
+      ],
+      recommendation: 'Ajustar la consigna al rango de trabajo (3–7 °C). Si persiste, verificar la lectura de la tarjeta en modo servicio y el recorrido del aire entre compartimentos.',
+      parts: ['Tarjeta de control', 'Sensor NTC'],
+    },
   },
   result_termostato_fijo: {
     id: 'result_termostato_fijo', type: 'result',
@@ -389,9 +592,53 @@ export const ESCARCHA: DiagnosticTree = {
     id: 'escarcha_evaporador', type: 'question',
     text: '¿El sistema de descongelamiento automático funciona? (termostato de deshielo o resistencia de deshielo)',
     options: [
-      { label: 'No, no calienta la resistencia de deshielo', nextId: 'result_resistencia', color: 'danger' },
+      { label: 'No, no calienta la resistencia de deshielo', nextId: 'escarcha_medir_resistencia', color: 'danger' },
       { label: 'Sí, pero sigue acumulando', nextId: 'result_frecuencia', color: 'neutral' },
     ],
+  },
+  escarcha_medir_resistencia: {
+    id: 'escarcha_medir_resistencia', type: 'measure',
+    text: 'Medir la resistencia de deshielo y su fusible térmico',
+    detail: 'Desconecta la resistencia y mide su valor óhmico: debe coincidir con la placa (típicamente 100–300 Ω). Verifica continuidad del fusible térmico y del termostato de deshielo en serie. Con el equipo en ciclo de deshielo, confirma que llega voltaje a la resistencia.',
+    tip: 'Una resistencia abierta no calienta y el evaporador termina bloqueado de hielo; si el fusible térmico está abierto, hubo un sobrecalentamiento previo que hay que corregir.',
+    evidenceLabel: 'Foto de la medición de la resistencia y del fusible térmico',
+    nextId: 'escarcha_resistencia_ok',
+  },
+  escarcha_resistencia_ok: {
+    id: 'escarcha_resistencia_ok', type: 'question',
+    text: '¿La resistencia o el fusible térmico están abiertos?',
+    options: [
+      { label: 'Sí, abiertos (sin continuidad)', nextId: 'result_resistencia', color: 'danger' },
+      { label: 'No, la resistencia está en rango', nextId: 'escarcha_senal_tarjeta', color: 'neutral' },
+    ],
+  },
+  escarcha_senal_tarjeta: {
+    id: 'escarcha_senal_tarjeta', type: 'measure',
+    text: 'Verificar la señal de deshielo desde la tarjeta o el timer',
+    detail: 'Fuerza un ciclo de deshielo (según el manual o el modo de servicio) y mide si la tarjeta o el timer entrega voltaje al circuito de deshielo. Si no hay señal, la falla está en el control o en el sensor de deshielo.',
+    evidenceLabel: 'Foto de la medición de la señal de deshielo',
+    nextId: 'escarcha_senal_ok',
+  },
+  escarcha_senal_ok: {
+    id: 'escarcha_senal_ok', type: 'question',
+    text: '¿La tarjeta o el timer entregan voltaje al circuito de deshielo?',
+    options: [
+      { label: 'No, no hay señal de deshielo', nextId: 'result_control_deshielo', color: 'danger' },
+      { label: 'Sí, hay señal y no calienta', nextId: 'result_resistencia', color: 'neutral' },
+    ],
+  },
+  result_control_deshielo: {
+    id: 'result_control_deshielo', type: 'result',
+    text: 'Control de deshielo sin señal de salida',
+    result: {
+      causes: [
+        { cause: 'Tarjeta o timer de deshielo sin salida', probability: 50 },
+        { cause: 'Sensor o termostato de deshielo con lectura fuera de rango', probability: 35 },
+        { cause: 'Cableado entre control y resistencia interrumpido', probability: 15 },
+      ],
+      recommendation: 'Verificar el sensor de deshielo contra la tabla y la continuidad del circuito hasta la resistencia. Si el control no conmuta, solicitar la tarjeta o el timer según el modelo.',
+      parts: ['Tarjeta de control', 'Sensor de deshielo'],
+    },
   },
   result_resistencia: {
     id: 'result_resistencia', type: 'result',
@@ -450,7 +697,7 @@ export const CONGELA_NOENFRIA: DiagnosticTree = {
     text: '¿El equipo usa compresor Inverter?',
     detail: 'Las comprobaciones del módulo Inverter aparecen aquí después de las etapas iniciales obligatorias de voltaje y código de error.',
     options: [
-      { label: 'Sí, es Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'Sí, es Inverter', nextId: 'medir_senal', color: 'neutral' },
       { label: 'No, es convencional', nextId: 'ev_ventilador_congela', color: 'success' },
     ],
   },

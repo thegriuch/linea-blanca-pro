@@ -51,7 +51,7 @@ export const NOENFRIA: DiagnosticTree = {
     detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
     tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
     options: [
-      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'Sí, es tecnología Inverter', nextId: 'medir_senal', color: 'neutral' },
       { label: 'No, es compresor convencional', nextId: 'consumo_bajo', color: 'success' },
     ],
   },
@@ -470,7 +470,7 @@ export const NOARRANQUE: DiagnosticTree = {
     text: '¿El compresor del equipo es tipo Inverter?',
     detail: 'Esta identificación se realiza después de validar el voltaje de alimentación y revisar si el equipo muestra un código de error.',
     options: [
-      { label: 'Sí, es compresor Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'Sí, es compresor Inverter', nextId: 'medir_senal', color: 'neutral' },
       { label: 'No, es compresor convencional', nextId: 'noarranque_voltaje', color: 'success' },
     ],
   },
@@ -529,7 +529,7 @@ export const NOARRANQUE: DiagnosticTree = {
     detail: 'Los compresores Inverter no usan relé PTC externo: los alimenta un módulo driver (tarjeta inverter) que controla la velocidad. Verifica la placa del compresor o el manual del equipo.',
     tip: 'Indicios de Inverter: módulo electrónico grande cerca del compresor, sin PTC externo visible y frecuencia variable audible al operar.',
     options: [
-      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'Sí, es tecnología Inverter', nextId: 'medir_senal', color: 'neutral' },
       { label: 'No, es compresor convencional', nextId: 'result_ptc_o_compresor', color: 'success' },
     ],
   },

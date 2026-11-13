@@ -1,0 +1,70 @@
+name: Publicar OTA (EAS Update)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/linea-blanca-pro/**'
+      - '.github/workflows/ota-update.yml'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Canal de EAS Update (debe coincidir con el channel del build)'
+        type: choice
+        options: [production, preview]
+        default: production
+      message:
+        description: 'Mensaje del update'
+        required: false
+
+jobs:
+  update:
+    name: EAS Update
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.17.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: .
+
+      - name: Check Expo token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Falta el secret EXPO_TOKEN en GitHub Secrets (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish OTA update
+        working-directory: artifacts/linea-blanca-pro
+        env:
+          UPDATE_BRANCH: ${{ github.event.inputs.branch || 'production' }}
+          UPDATE_MESSAGE: ${{ github.event.inputs.message || github.event.head_commit.message || 'Actualización OTA' }}
+        run: |
+          MESSAGE=$(printf '%s' "$UPDATE_MESSAGE" | tr '\n' ' ' | cut -c1-200)
+          eas update --branch "$UPDATE_BRANCH" --message "$MESSAGE" --platform all --non-interactive

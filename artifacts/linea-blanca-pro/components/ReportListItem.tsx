@@ -3,6 +3,7 @@ import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { getEquipoInfo } from '@/constants/equipos';
+import { EquipoIcon } from '@/components/EquipoIcon';
 import type { DiagnosticSession } from '@/types/diagnostico';
 import colors from '@/constants/colors';
 
@@ -25,7 +26,7 @@ export function ReportListItem({ session, onPress }: Props) {
       style={[styles.card, { backgroundColor: c.card, borderColor: c.border, borderRadius: colors.radius }]}
     >
       <View style={[styles.iconWrap, { backgroundColor: equipo.color + '20', borderRadius: 10 }]}>
-        <Feather name={equipo.icon as keyof typeof Feather.glyphMap} size={20} color={equipo.color} />
+        <EquipoIcon tipo={session.equipo.tipo} size={20} color={equipo.color} />
       </View>
       <View style={styles.info}>
         <Text style={[styles.cliente, { color: c.foreground }]} numberOfLines={1}>

@@ -67,3 +67,11 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Capturas de trabajo
+screenshot-*.png
+
+# Artefactos de preview y material original pesado
+.web-preview/
+.cfreebuff/
+artifacts/linea-blanca-pro/assets/images/gifs/_originales/

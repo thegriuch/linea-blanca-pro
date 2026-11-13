@@ -44,7 +44,7 @@ export const DECISION_TREES: Record<string, DiagnosticTree> = {
   ...AIR_ERROR_TREES,
 
   // Módulo Inverter como árbol navegable (flashes del congelador apuntan a 'inverter')
-  inverter: { ...INVERTER_TREE, start: INVERTER_TREE.inv_start },
+  inverter: { ...INVERTER_TREE, start: INVERTER_TREE.medir_senal },
 
   // Lavadora / secadora
   nocentrifuga:               NOCENTRIFUGA,

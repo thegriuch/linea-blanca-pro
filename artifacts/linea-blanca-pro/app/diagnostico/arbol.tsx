@@ -57,8 +57,8 @@ const VOLTAJE_NODE: TreeNode = {
   id:            '__ev_voltaje__',
   type:          'evidence',
   text:          'Registrar voltaje en la toma eléctrica del equipo',
-  detail:        'Antes de tocar el equipo, mide el voltaje en la toma eléctrica con el multímetro. Verifica que esté dentro del ±10 % del nominal (110 V o 220 V según equipo). Si hay voltaje incorrecto, anótalo en el informe.',
-  tip:           'Un voltaje bajo o muy variable puede ser la causa de la falla. Documenta siempre este dato como parte del diagnóstico.',
+  detail:        'Verifica en la etiqueta del producto el voltaje nominal (por ejemplo 110 V o 220 V) y calcula el rango permitido: a ese valor súmale el 10 % y réstale el 10 %. Ejemplo: si la etiqueta dice 220 V, el rango es 198 V–242 V; si dice 110 V, el rango es 99 V–121 V. Mide la toma eléctrica con el multímetro y compara con ese rango.',
+  tip:           'No supongas 110 V ni 220 V: el voltaje nominal siempre está en la etiqueta del producto. Un voltaje bajo o muy variable puede ser la causa de la falla; si está fuera del rango calculado, anótalo en el informe.',
   evidenceLabel: 'Foto del multímetro mostrando el voltaje en la toma',
   nextId:        'start',
 };
@@ -68,8 +68,8 @@ const AMPERAJE_NODE: TreeNode = {
   id:            '__ev_amperaje__',
   type:          'evidence',
   text:          'Medir el amperaje de consumo del equipo',
-  detail:        'Con pinza amperimétrica, mide el amperaje del compresor (o motor principal) durante el intento de arranque o funcionamiento. Compara con el valor RLA de la placa del equipo.',
-  tip:           'Consumo muy bajo (<1 A) puede indicar que el compresor casi no trabaja. Consumo alto o por encima del RLA indica sobreesfuerzo o corto. Documenta siempre esta medición.',
+  detail:        'Con pinza amperimétrica, mide el amperaje del compresor (o motor principal) durante el intento de arranque o funcionamiento y compara con la etiqueta del producto. Si el equipo es Inverter, el consumo normal será bajo y variable porque el compresor modula su velocidad. Si es On/Off (convencional), el consumo puede variar entre el pico de arranque y la marcha estable: lee la etiqueta del producto para conocer la corriente nominal o el RLA de referencia.',
+  tip:           'Inverter: un consumo bajo y cambiante es normal; un consumo alto sostenido indica sobreesfuerzo. On/Off: el pico de arranque es mayor que la marcha estable, así que compara siempre contra la etiqueta del producto. Documenta siempre esta medición.',
   evidenceLabel: 'Foto del amperaje medido con la pinza (pinza + display)',
 };
 
@@ -78,9 +78,9 @@ const SALIDA_INVERTER_NODE: TreeNode = {
   id:            '__ev_salida_inverter__',
   type:          'evidence',
   text:          'Medir el voltaje en la salida de la tarjeta Inverter (U, V, W)',
-  detail:        'Con el equipo en marcha (o en intento de arranque), mide el voltaje entre las fases U-V, U-W y V-W en la salida del módulo hacia el compresor. En arranque típico se esperan más de 80 V y con el compresor estable el voltaje debe mantenerse en el rango de la placa (60–230 V según fabricante). Un valor de 0 V entre fases indica tarjeta inverter sin salida o compresor bloqueado.',
+  detail:        'Con el equipo en marcha (o en intento de arranque), mide el voltaje entre las fases U-V, U-W y V-W en la salida del módulo hacia el compresor. El rango esperado parte de 40 V y con el compresor estable el voltaje debe mantenerse en el rango de la placa (40–230 V según fabricante). Un valor de 0 V entre fases indica tarjeta inverter sin salida o compresor bloqueado.',
   tip:           'Si el voltaje de salida es normal pero el compresor no arranca, la falla apunta al compresor. Si no hay voltaje de salida, verifica alimentación y señales de la tarjeta antes de condenarla. Documenta siempre esta medición como evidencia.',
-  evidenceLabel: 'Foto del voltaje medido en la salida de la tarjeta Inverter (multímetro + terminales U, V, W)',
+  evidenceLabel: 'Fotos del voltaje medido en la salida de la tarjeta Inverter: una por cada par U-V, U-W y V-W (multímetro + terminales)',
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -100,15 +100,15 @@ export default function ArbolScreen() {
   // ── Etapas del flujo ────────────────────────────────────────────────────
   // ETAPA 0 — Voltaje y amperaje (obligatorias en todos los diagnósticos)
   const [voltajeListo, setVoltajeListo] = useState(false);
-  const [voltajeUri, setVoltajeUri] = useState<string | null>(null);
+  const [voltajeUris, setVoltajeUris] = useState<string[]>([]);
   const [amperajeListo, setAmperajeListo] = useState(false);
-  const [amperajeUri, setAmperajeUri] = useState<string | null>(null);
+  const [amperajeUris, setAmperajeUris] = useState<string[]>([]);
   // ETAPA 0b — tecnología Inverter (solo para equipos con compresor)
   const [inverterListo, setInverterListo] = useState(false);
   const [esInverter, setEsInverter] = useState<boolean | null>(null);
   // ETAPA 0d — Toma de voltaje en la salida de la tarjeta Inverter (solo si es Inverter)
   const [salidaListo, setSalidaListo] = useState(false);
-  const [salidaUri, setSalidaUri] = useState<string | null>(null);
+  const [salidaUris, setSalidaUris] = useState<string[]>([]);
   // ETAPA 1 — Verificación de código de error (solo si es Inverter)
   const [errorListo, setErrorListo] = useState(false);
   // Modo directo a código: la falla seleccionada en el menú es 'Validación de código de error'
@@ -116,11 +116,11 @@ export default function ArbolScreen() {
   const [tieneError, setTieneError] = useState<boolean | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [codigoSel, setCodigoSel] = useState<CodigoError | null>(null);
-  // ETAPA 2 — Árbol de diagnóstico
-  const [evidenceUri, setEvidenceUri] = useState<string | null>(null);
+  // ETAPA 2 — Árbol de diagnóstico (varias fotos por nodo de evidencia)
+  const [nodeEvidence, setNodeEvidence] = useState<Record<string, string[]>>({});
   const [hiddenGifKey, setHiddenGifKey] = useState<string | null>(null);
   // ETAPA 3 — Evidencia final de la falla (antes del informe de probabilidades)
-  const [finalEvidenceUri, setFinalEvidenceUri] = useState<string | null>(null);
+  const [finalEvidenceUris, setFinalEvidenceUris] = useState<string[]>([]);
 
   const equipoSinCompresor = currentSession?.equipo.tipo === 'lavadora'
     || currentSession?.equipo.tipo === 'secadora';
@@ -131,6 +131,56 @@ export default function ArbolScreen() {
     setErrorListo(true);
   }, [equipoSinCompresor, equipoFalla]);
 
+  // Al avanzar de nodo, la vista vuelve al inicio para mostrar la pregunta o la
+  // imagen nueva completa, en lugar de conservar el scroll del botón anterior.
+  const treeScrollRef = useRef<ScrollView | null>(null);
+  // La clave incluye cada etapa del flujo (voltaje, amperaje, Inverter, salida,
+  // código y árbol): al cambiar de etapa el contenido cambia aunque el nodo no,
+  // y la vista debe volver arriba igual que al avanzar de pregunta.
+  const scrollKey = [
+    currentSession?.currentNodeId ?? '',
+    currentSession?.path.length ?? 0,
+    voltajeListo ? 'v1' : 'v0',
+    amperajeListo ? 'a1' : 'a0',
+    inverterListo ? 'i1' : 'i0',
+    esInverter === null ? 'ix' : esInverter ? 'is' : 'in',
+    salidaListo ? 's1' : 's0',
+    errorListo ? 'e1' : 'e0',
+    tieneError === null ? 'tx' : tieneError ? 'ts' : 'tn',
+    codigoSel?.codigo ?? '',
+  ].join('|');
+  useEffect(() => {
+    const target = treeScrollRef.current as any;
+    if (target) {
+      // En nativo el ref es el ScrollView; en web apunta al nodo del DOM, así que
+      // se cubren ambos casos para dejar la vista siempre al inicio del nodo.
+      if (typeof target.scrollTo === 'function') target.scrollTo({ y: 0, top: 0, animated: false });
+      if (typeof target.scrollTop === 'number') target.scrollTop = 0;
+      const scrollNode = typeof target.getScrollableNode === 'function' ? target.getScrollableNode() : null;
+      if (scrollNode && typeof scrollNode.scrollTop === 'number') scrollNode.scrollTop = 0;
+      let el: any = scrollNode ?? (typeof target.scrollTop === 'number' ? target : null);
+      while (el && typeof el.scrollTop === 'number') {
+        el.scrollTop = 0;
+        el = el.parentElement;
+      }
+    }
+    // En web el contenedor desplazable real puede ser otro nodo que el ref de
+    // React Native Web: se sube cualquier contenedor vertical con scroll de la
+    // pantalla para que cada paso nuevo se vea desde arriba.
+    if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+      const nodes = Array.from(document.querySelectorAll('div'));
+      for (const node of nodes) {
+        const el = node as any;
+        if (el.scrollTop > 0 && ['auto', 'scroll'].includes(window.getComputedStyle(el).overflowY)) {
+          el.scrollTop = 0;
+        }
+      }
+    }
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo(0, 0);
+    }
+  }, [scrollKey]);
+
   if (!currentSession) {
     router.replace('/diagnostico/nuevo');
     return null;
@@ -138,6 +188,7 @@ export default function ArbolScreen() {
 
   const { equipo, currentNodeId, path } = currentSession;
   const node: TreeNode = getNode(equipo.treeId, currentNodeId);
+  const nodeUris = nodeEvidence[node.id] ?? [];
   const codigos = getCodigosError(equipo.tipo as any);
 
   const codigosFiltrados = useMemo(() => {
@@ -194,15 +245,14 @@ export default function ArbolScreen() {
     if (gatesSaltados.current.has(node.id)) return;
     const etiqueta = node.gate === 'inverter_si'
       ? (esInverter ? 'Sí' : esInverter === false ? 'No' : null)
-      : node.gate === 'codigo_si' ? (tieneError ? 'Sí' : null)
+      : node.gate === 'codigo_si' ? (codigoSel ? 'Sí' : null)
       : null;
     if (!etiqueta) return;
     const opt = node.options?.find((o) => o.label.toLowerCase().startsWith(etiqueta.toLowerCase()));
     if (!opt) return;
     gatesSaltados.current.add(node.id);
     advanceNode(opt.nextId, `${opt.label} (auto)`);
-    setEvidenceUri(null);
-  }, [node.id, node.gate, esInverter, tieneError]);
+  }, [node.id, node.gate, esInverter, tieneError, codigoSel]);
 
   const toggleGif = () => {
     if (!gifKey || !gifUri) return;
@@ -212,14 +262,12 @@ export default function ArbolScreen() {
   const handleOption = (nextId: string, label: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     advanceNode(nextId, label);
-    setEvidenceUri(null);
   };
 
   const handleContinue = () => {
     if (!node.nextId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     advanceNode(node.nextId);
-    setEvidenceUri(null);
   };
 
   const capturePhoto = async (onDone: (uri: string) => void) => {
@@ -239,7 +287,7 @@ export default function ArbolScreen() {
 
   const handleCaptureVoltaje = async () => {
     await capturePhoto((uri) => {
-      setVoltajeUri(uri);
+      setVoltajeUris((prev) => [...prev, uri]);
       addEvidence({
         uri,
         nodeId: '__ev_voltaje__',
@@ -250,7 +298,7 @@ export default function ArbolScreen() {
 
   const handleCaptureAmperaje = async () => {
     await capturePhoto((uri) => {
-      setAmperajeUri(uri);
+      setAmperajeUris((prev) => [...prev, uri]);
       addEvidence({
         uri,
         nodeId: '__ev_amperaje__',
@@ -262,7 +310,7 @@ export default function ArbolScreen() {
   // Evidencia del voltaje en la salida de la tarjeta Inverter (U, V, W)
   const handleCaptureSalida = async () => {
     await capturePhoto((uri) => {
-      setSalidaUri(uri);
+      setSalidaUris((prev) => [...prev, uri]);
       addEvidence({
         uri,
         nodeId: '__ev_salida_inverter__',
@@ -273,7 +321,7 @@ export default function ArbolScreen() {
 
   const handleCapturePhoto = async () => {
     await capturePhoto((uri) => {
-      setEvidenceUri(uri);
+      setNodeEvidence((prev) => ({ ...prev, [node.id]: [...(prev[node.id] ?? []), uri] }));
       addEvidence({
         uri,
         nodeId: node.id,
@@ -285,7 +333,7 @@ export default function ArbolScreen() {
   // Evidencia final: foto de la falla encontrada antes del informe de probabilidades
   const handleCaptureFinal = async () => {
     await capturePhoto((uri) => {
-      setFinalEvidenceUri(uri);
+      setFinalEvidenceUris((prev) => [...prev, uri]);
       addEvidence({
         uri,
         nodeId: node.id,
@@ -330,7 +378,7 @@ export default function ArbolScreen() {
     if (!amperajeListo) { setVoltajeListo(false); return; }
     if (equipoSinCompresor && equipoFalla !== '__error__' && path.length === 0) {
       setAmperajeListo(false);
-      setAmperajeUri(null);
+      setAmperajeUris([]);
       return;
     }
     // Etapa 0c: pregunta inverter
@@ -344,7 +392,7 @@ export default function ArbolScreen() {
       if (!esInverter) { setInverterListo(false); setEsInverter(null); return; }
       if (codigoSel) { setCodigoSel(null); return; }
       if (tieneError !== null) { setTieneError(null); setBusqueda(''); return; }
-      setSalidaListo(false); setSalidaUri(null); return;
+      setSalidaListo(false); setSalidaUris([]); return;
     }      // Etapa 2: árbol
       if (path.length === 0 && equipoFalla === '__error__') { router.back(); return; }
       if (path.length === 0) {
@@ -354,16 +402,14 @@ export default function ArbolScreen() {
         setErrorCode(undefined);
         setBusqueda('');
         setSalidaListo(false);
-        setSalidaUri(null);
+        setSalidaUris([]);
         setInverterListo(false);
         setEsInverter(null);
         setAmperajeListo(false);
-        setAmperajeUri(null);
+        setAmperajeUris([]);
         return;
       }
     goBackNode();
-    setEvidenceUri(null);
-    setFinalEvidenceUri(null);
   };
 
   const stepsTotal = path.length
@@ -412,14 +458,6 @@ export default function ArbolScreen() {
           />
 
         <View style={styles.evidenceSection}>
-          {voltajeUri && (
-            <View style={styles.evidencePreview}>
-              <Image source={{ uri: voltajeUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
-              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
-                <Feather name="check" size={14} color={c.successForeground} />
-              </View>
-            </View>
-          )}
           <TouchableOpacity
             onPress={handleCaptureVoltaje}
             activeOpacity={0.75}
@@ -427,13 +465,14 @@ export default function ArbolScreen() {
           >
             <Feather name="camera" size={20} color="#7C3AED" />
             <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
-              {voltajeUri ? 'Tomar otra foto' : 'Abrir cámara / galería'}
+              {voltajeUris.length > 0 ? 'Tomar otra foto' : 'Abrir cámara / galería'}
             </Text>
           </TouchableOpacity>
           <Text style={[styles.evidenceLabel, { color: c.mutedForeground }]}>{VOLTAJE_NODE.evidenceLabel}</Text>
+          <EvidenceGallery uris={voltajeUris} c={c} />
         </View>
 
-        {voltajeUri
+        {voltajeUris.length > 0
           ? <PrimaryButton label="Guardar voltaje y continuar" icon="arrow-right" onPress={() => setVoltajeListo(true)} />
           : (
             <TouchableOpacity onPress={() => setVoltajeListo(true)} style={styles.skipLink}>
@@ -484,14 +523,6 @@ export default function ArbolScreen() {
           />
 
         <View style={styles.evidenceSection}>
-          {amperajeUri && (
-            <View style={styles.evidencePreview}>
-              <Image source={{ uri: amperajeUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
-              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
-                <Feather name="check" size={14} color={c.successForeground} />
-              </View>
-            </View>
-          )}
           <TouchableOpacity
             onPress={handleCaptureAmperaje}
             activeOpacity={0.75}
@@ -499,13 +530,14 @@ export default function ArbolScreen() {
           >
             <Feather name="camera" size={20} color="#7C3AED" />
             <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
-              {amperajeUri ? 'Tomar otra foto' : 'Abrir cámara / galería'}
+              {amperajeUris.length > 0 ? 'Tomar otra foto' : 'Abrir cámara / galería'}
             </Text>
           </TouchableOpacity>
           <Text style={[styles.evidenceLabel, { color: c.mutedForeground }]}>{AMPERAJE_NODE.evidenceLabel}</Text>
+          <EvidenceGallery uris={amperajeUris} c={c} />
         </View>
 
-        {amperajeUri
+        {amperajeUris.length > 0
           ? <PrimaryButton label="Guardar amperaje y continuar" icon="arrow-right" onPress={() => setAmperajeListo(true)} />
           : (
             <TouchableOpacity onPress={() => setAmperajeListo(true)} style={styles.skipLink}>
@@ -630,14 +662,6 @@ export default function ArbolScreen() {
         />
 
         <View style={styles.evidenceSection}>
-          {salidaUri && (
-            <View style={styles.evidencePreview}>
-              <Image source={{ uri: salidaUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
-              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
-                <Feather name="check" size={14} color={c.successForeground} />
-              </View>
-            </View>
-          )}
           <TouchableOpacity
             onPress={handleCaptureSalida}
             activeOpacity={0.75}
@@ -645,13 +669,14 @@ export default function ArbolScreen() {
           >
             <Feather name="camera" size={20} color="#7C3AED" />
             <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
-              {salidaUri ? 'Tomar otra foto' : 'Abrir cámara / galería'}
+              {salidaUris.length > 0 ? 'Tomar otra foto' : 'Abrir cámara / galería'}
             </Text>
           </TouchableOpacity>
           <Text style={[styles.evidenceLabel, { color: c.mutedForeground }]}>{SALIDA_INVERTER_NODE.evidenceLabel}</Text>
+          <EvidenceGallery uris={salidaUris} c={c} />
         </View>
 
-        {salidaUri
+        {salidaUris.length > 0
           ? <PrimaryButton label="Guardar medición y continuar" icon="arrow-right" onPress={() => setSalidaListo(true)} />
           : (
             <TouchableOpacity onPress={() => setSalidaListo(true)} style={styles.skipLink}>
@@ -936,14 +961,6 @@ export default function ArbolScreen() {
         </View>
 
         <View style={styles.evidenceSection}>
-          {finalEvidenceUri && (
-            <View style={styles.evidencePreview}>
-              <Image source={{ uri: finalEvidenceUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
-              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
-                <Feather name="check" size={14} color={c.successForeground} />
-              </View>
-            </View>
-          )}
           <TouchableOpacity
             onPress={handleCaptureFinal}
             activeOpacity={0.75}
@@ -951,13 +968,14 @@ export default function ArbolScreen() {
           >
             <Feather name="camera" size={20} color="#7C3AED" />
             <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
-              {finalEvidenceUri ? 'Tomar otra foto' : 'Abrir cámara'}
+              {finalEvidenceUris.length > 0 ? 'Tomar otra foto' : 'Abrir cámara'}
             </Text>
           </TouchableOpacity>
+          <EvidenceGallery uris={finalEvidenceUris} c={c} />
         </View>
 
         <PrimaryButton
-          label={finalEvidenceUri ? 'Continuar al informe de probabilidades' : 'Continuar sin foto al informe'}
+          label={finalEvidenceUris.length > 0 ? 'Continuar al informe de probabilidades' : 'Continuar sin foto al informe'}
           icon="arrow-right"
           onPress={handleFinalContinue}
         />
@@ -973,6 +991,8 @@ export default function ArbolScreen() {
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <ScrollView
+      key={`arbol-${scrollKey}`}
+      ref={treeScrollRef}
       style={{ flex: 1, backgroundColor: c.background }}
       contentContainerStyle={{ padding: 20, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 40 }}
     >
@@ -1075,14 +1095,6 @@ export default function ArbolScreen() {
       {/* Evidencia */}
       {node.type === 'evidence' && (
         <View style={styles.evidenceSection}>
-          {evidenceUri && (
-            <View style={styles.evidencePreview}>
-              <Image source={{ uri: evidenceUri }} style={[styles.evidenceImg, { borderRadius: colors.radius }]} />
-              <View style={[styles.evidenceCheckBadge, { backgroundColor: c.success }]}>
-                <Feather name="check" size={14} color={c.successForeground} />
-              </View>
-            </View>
-          )}
           <TouchableOpacity
             onPress={handleCapturePhoto}
             activeOpacity={0.75}
@@ -1090,12 +1102,13 @@ export default function ArbolScreen() {
           >
             <Feather name="camera" size={20} color="#7C3AED" />
             <Text style={[styles.captureBtnText, { color: '#7C3AED' }]}>
-              {evidenceUri ? 'Tomar otra foto' : 'Abrir cámara'}
+              {nodeUris.length > 0 ? 'Tomar otra foto' : 'Abrir cámara'}
             </Text>
           </TouchableOpacity>
           {node.evidenceLabel && (
             <Text style={[styles.evidenceLabel, { color: c.mutedForeground }]}>{node.evidenceLabel}</Text>
           )}
+          <EvidenceGallery uris={nodeUris} c={c} />
         </View>
       )}
 
@@ -1125,12 +1138,12 @@ export default function ArbolScreen() {
       {/* Continuar (action / measure / evidence) */}
       {(node.type === 'action' || node.type === 'measure' || node.type === 'evidence') && node.nextId && (
         <View style={styles.continueSection}>
-          {node.type === 'evidence' && !evidenceUri && (
+          {node.type === 'evidence' && nodeUris.length === 0 && (
             <TouchableOpacity onPress={handleContinue} style={styles.skipLink}>
               <Text style={[styles.skipText, { color: c.mutedForeground }]}>Omitir evidencia y continuar</Text>
             </TouchableOpacity>
           )}
-          {(node.type !== 'evidence' || evidenceUri) && (
+          {(node.type !== 'evidence' || nodeUris.length > 0) && (
             <PrimaryButton
               label={node.type === 'evidence' ? 'Guardar evidencia y continuar' : 'Continuar'}
               icon="arrow-right"
@@ -1144,6 +1157,29 @@ export default function ArbolScreen() {
         <PrimaryButton label="Volver" variant="outline" onPress={handleBack} />
       </View>
     </ScrollView>
+  );
+}
+
+// Galería de las fotos ya tomadas en la etapa actual (permite varias por paso).
+function EvidenceGallery({ uris, c }: { uris: string[]; c: ReturnType<typeof useColors> }) {
+  if (uris.length === 0) return null;
+  return (
+    <View style={styles.galleryBox}>
+      <Text style={[styles.galleryTitle, { color: c.mutedForeground }]}>
+        Fotos tomadas en esta etapa ({uris.length})
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryContent}>
+        {uris.map((uri, index) => (
+          <View key={`${uri}-${index}`} style={styles.galleryItem}>
+            <Image source={{ uri }} style={[styles.galleryImg, { borderRadius: 8 }]} />
+            <View style={[styles.galleryBadge, { backgroundColor: c.success }]}>
+              <Feather name="check" size={11} color={c.successForeground} />
+            </View>
+            <Text style={[styles.galleryIndex, { color: c.mutedForeground }]}>{index + 1}</Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -1468,6 +1504,22 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),
   },
   evidenceSection: { marginBottom: 16, gap: 10 },
+  galleryBox: { gap: 6, marginTop: 2 },
+  galleryTitle: {
+    fontSize: 11,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  galleryContent: { gap: 8, paddingVertical: 2 },
+  galleryItem: { position: 'relative' },
+  galleryImg: { width: 96, height: 96 },
+  galleryBadge: {
+    position: 'absolute', top: 4, right: 4, width: 20, height: 20,
+    borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+  },
+  galleryIndex: {
+    fontSize: 10, textAlign: 'center', marginTop: 2,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
   evidencePreview: { position: 'relative', alignSelf: 'center' },
   evidenceImg:     { width: 200, height: 150 },
   evidenceCheckBadge: {

@@ -17,6 +17,8 @@ export interface EquipoTipoInfo {
   label: string;
   icon: string;
   color: string;
+  /** Familia de iconos: Feather por defecto, MaterialCommunityIcons cuando el icono no existe en Feather. */
+  family?: 'feather' | 'material';
 }
 
 export type NodeType = 'question' | 'action' | 'evidence' | 'measure' | 'result';
@@ -124,6 +126,8 @@ export interface DiagnosticSession {
   completed: boolean;
   conclusion: ConclusionInfo;
   errorCode?: DiagnosticErrorCode;
+  /** El técnico validó el caso con el líder técnico asignado por la marca. */
+  liderValidado?: boolean;
   result?: {
     causes: DiagnosticCause[];
     recommendation: string;

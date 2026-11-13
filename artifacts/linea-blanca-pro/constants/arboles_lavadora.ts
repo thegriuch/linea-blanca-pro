@@ -97,7 +97,43 @@ export const NODESAGUA: DiagnosticTree = {
     id: 'revisar_bomba_voltaje', type: 'measure',
     text: 'Verificar voltaje en la bomba de drenaje',
     detail: 'En el ciclo de drenaje, mide si llega voltaje a los terminales de la bomba. Sin voltaje indica falla en control.',
-    nextId: 'result_control_drenaje',
+    nextId: 'bomba_voltaje_ok',
+  },
+  bomba_voltaje_ok: {
+    id: 'bomba_voltaje_ok', type: 'question',
+    text: '¿Llega el voltaje de la bomba (12 V o 120/220 V según el modelo) durante el drenaje?',
+    options: [
+      { label: 'Sí llega y la bomba no gira', nextId: 'medir_bobina_bomba', color: 'danger' },
+      { label: 'No llega voltaje', nextId: 'result_control_drenaje', color: 'neutral' },
+    ],
+  },
+  medir_bobina_bomba: {
+    id: 'medir_bobina_bomba', type: 'measure',
+    text: 'Medir la bobina de la bomba y verificar que el impulsor gire libre',
+    detail: 'Con la bomba desconectada mide la resistencia de su bobina (típicamente 15–200 Ω según el modelo); infinito indica bobina abierta y 0 Ω un corto. Gira el impulsor con la mano: debe girar libre, sin trabas ni objetos atascados.',
+    evidenceLabel: 'Foto de la medición de la bobina y del impulsor',
+    nextId: 'bomba_bobina_ok',
+  },
+  bomba_bobina_ok: {
+    id: 'bomba_bobina_ok', type: 'question',
+    text: '¿La bobina está abierta o el impulsor está trabado?',
+    options: [
+      { label: 'Sí, bobina abierta o impulsor bloqueado', nextId: 'result_bomba_bloqueada', color: 'danger' },
+      { label: 'No, bobina y giro correctos', nextId: 'result_control_drenaje', color: 'neutral' },
+    ],
+  },
+  result_bomba_bloqueada: {
+    id: 'result_bomba_bloqueada', type: 'result',
+    text: 'Bomba de drenaje bloqueada o con bobina abierta',
+    result: {
+      causes: [
+        { cause: 'Impulsor bloqueado por objeto extraño', probability: 50 },
+        { cause: 'Bobina de la bomba abierta o quemada', probability: 40 },
+        { cause: 'Sello de la bomba con fuga que afecta el giro', probability: 10 },
+      ],
+      recommendation: 'Retirar el objeto que bloquea el impulsor o reemplazar la bomba si la bobina está abierta. Verificar que la manguera de drenaje no esté obstruida antes de probar.',
+      parts: ['Bomba de drenaje'],
+    },
   },
   result_control_drenaje: {
     id: 'result_control_drenaje', type: 'result',
@@ -146,7 +182,58 @@ export const NOLLENA: DiagnosticTree = {
     id: 'revisar_voltaje_valvula', type: 'measure',
     text: 'Medir voltaje en la electroválvula durante llenado',
     detail: 'En el ciclo de llenado, mide si llega voltaje a los terminales de la electroválvula.',
-    nextId: 'result_control_valvula',
+    nextId: 'valvula_voltaje_ok',
+  },
+  valvula_voltaje_ok: {
+    id: 'valvula_voltaje_ok', type: 'question',
+    text: '¿Llega voltaje a la electroválvula durante el llenado?',
+    options: [
+      { label: 'Sí llega y no abre', nextId: 'medir_bobina_valvula', color: 'danger' },
+      { label: 'No llega voltaje', nextId: 'nollena_presostato', color: 'neutral' },
+    ],
+  },
+  medir_bobina_valvula: {
+    id: 'medir_bobina_valvula', type: 'measure',
+    text: 'Medir la bobina de la electroválvula y probar su apertura',
+    detail: 'Mide la resistencia de cada bobina (típico 3–5 kΩ en válvulas de 120 V; 1–5 kΩ en 220 V). Infinito indica bobina abierta. Si el valor es correcto, aplica voltaje directo y confirma que el agua pasa.',
+    evidenceLabel: 'Foto de la medición de la bobina de la electroválvula',
+    nextId: 'valvula_bobina_ok',
+  },
+  valvula_bobina_ok: {
+    id: 'valvula_bobina_ok', type: 'question',
+    text: '¿La bobina está abierta o la válvula no abre con voltaje directo?',
+    options: [
+      { label: 'Sí, bobina abierta o válvula trabada', nextId: 'result_valvula_tapada', color: 'danger' },
+      { label: 'No, la válvula abre correctamente', nextId: 'nollena_presostato', color: 'neutral' },
+    ],
+  },
+  nollena_presostato: {
+    id: 'nollena_presostato', type: 'measure',
+    text: 'Verificar el presostato/sensor de nivel y su manguera',
+    detail: 'Sopla suavemente la manguera del presostato y confirma que hace clic; mide continuidad en sus terminales en vacío y con presión. Revisa que la manguera no esté tapada ni desconectada de la tina.',
+    evidenceLabel: 'Foto del presostato, su manguera y la medición de continuidad',
+    nextId: 'nollena_presostato_ok',
+  },
+  nollena_presostato_ok: {
+    id: 'nollena_presostato_ok', type: 'question',
+    text: '¿El presostato no cambia de estado o la manguera está obstruida?',
+    options: [
+      { label: 'Sí, presostato o manguera con falla', nextId: 'result_presostato_nivel', color: 'danger' },
+      { label: 'No, presostato y manguera correctos', nextId: 'result_control_valvula', color: 'neutral' },
+    ],
+  },
+  result_presostato_nivel: {
+    id: 'result_presostato_nivel', type: 'result',
+    text: 'Presostato o sensor de nivel sin conmutación',
+    result: {
+      causes: [
+        { cause: 'Presostato descalibrado o con contactos pegados', probability: 50 },
+        { cause: 'Manguera de presión tapada o desconectada', probability: 35 },
+        { cause: 'Cámara de presión de la tina obstruida', probability: 15 },
+      ],
+      recommendation: 'Limpiar la manguera y la cámara de presión, y ajustar o reemplazar el presostato según la calibración del modelo. Probar el llenado hasta el nivel correcto y verificar el corte.',
+      parts: ['Presostato / sensor de nivel'],
+    },
   },
   result_control_valvula: {
     id: 'result_control_valvula', type: 'result',

@@ -18,6 +18,7 @@ import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StepProgress } from '@/components/StepProgress';
 import { FormField } from '@/components/FormField';
+import { EquipoIcon } from '@/components/EquipoIcon';
 import { getFallas } from '@/constants/fallas';
 import { getModelos } from '@/constants/modelos';
 import { getEquipoInfo } from '@/constants/equipos';
@@ -181,7 +182,7 @@ export default function FallaScreen() {
 
       {/* Equipo info */}
       <View style={[styles.equipoBanner, { backgroundColor: equipo.color + '15', borderRadius: colors.radius }]}>
-        <Feather name={equipo.icon as keyof typeof Feather.glyphMap} size={20} color={equipo.color} />
+        <EquipoIcon tipo={equipo.id} size={20} color={equipo.color} />
         <Text style={[styles.equipoBannerText, { color: equipo.color }]}>{equipo.label}</Text>
       </View>
 

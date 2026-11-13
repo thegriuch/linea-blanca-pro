@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   Image,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import { useColors } from '@/hooks/useColors';
 import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { ProbabilityBar } from '@/components/ProbabilityBar';
 import { EmptyState } from '@/components/EmptyState';
+import { EquipoIcon } from '@/components/EquipoIcon';
 import { getEquipoInfo } from '@/constants/equipos';
 import { shareReport } from '@/utils/share';
 import { getIrisParaRepuesto } from '@/constants/iris';
@@ -32,8 +34,10 @@ export default function ResultadoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { getSession } = useDiagnostico();
+  const { getSession, markLiderValidado } = useDiagnostico();
   const [sharing, setSharing] = useState(false);
+  const [askSolution, setAskSolution] = useState(false);
+  const [solutionStep, setSolutionStep] = useState<'ask' | 'leader'>('ask');
 
   const session = getSession(id);
 
@@ -63,6 +67,31 @@ export default function ResultadoScreen() {
     }
   };
 
+  // Antes de compartir se pregunta si el diagnóstico resuelve la falla. Si la
+  // respuesta es no, el mensaje del líder técnico se muestra en el mismo modal
+  // (Alert es un no-op en la versión web de react-native-web).
+  const handleAskSolution = () => {
+    setSolutionStep('ask');
+    setAskSolution(true);
+  };
+
+  const closeSolution = () => {
+    setAskSolution(false);
+    setSolutionStep('ask');
+  };
+
+  const handleSolved = () => {
+    closeSolution();
+    void handleShare();
+  };
+
+  // Al validar con el líder, la sesión queda marcada para que el DOCX que se
+  // comparte incluya la constancia del caso escalado.
+  const handleNotSolved = () => {
+    markLiderValidado(session.id);
+    setSolutionStep('leader');
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: c.background }}
@@ -71,7 +100,7 @@ export default function ResultadoScreen() {
       {/* Header banner */}
       <View style={[styles.banner, { backgroundColor: equipo.color }]}>
         <View style={[styles.bannerIcon, { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 14 }]}>
-          <Feather name={equipo.icon as keyof typeof Feather.glyphMap} size={28} color="#FFF" />
+          <EquipoIcon tipo={session.equipo.tipo} size={28} color="#FFF" />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.bannerTitle}>{equipo.label}</Text>
@@ -82,7 +111,7 @@ export default function ResultadoScreen() {
           <Text style={styles.bannerSub}>ID: {session.id}</Text>
         </View>
         <TouchableOpacity
-          onPress={handleShare}
+          onPress={handleAskSolution}
           disabled={sharing}
           style={[styles.shareBtn, { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10 }]}
         >
@@ -189,7 +218,7 @@ export default function ResultadoScreen() {
 
         {/* Share button */}
         <TouchableOpacity
-          onPress={handleShare}
+          onPress={handleAskSolution}
           disabled={sharing}
           activeOpacity={0.75}
           style={[styles.shareFullBtn, { backgroundColor: c.primary, borderRadius: colors.radius }]}
@@ -212,6 +241,84 @@ export default function ResultadoScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={askSolution}
+        transparent
+        animationType="fade"
+        onRequestClose={closeSolution}
+      >
+        <View style={styles.solutionBackdrop}>
+          <View style={[styles.solutionPanel, { backgroundColor: c.card, borderRadius: colors.radius }]}>
+            <View style={[styles.solutionIcon, { backgroundColor: c.primary + '18', borderRadius: 24 }]}>
+              <Feather name={solutionStep === 'ask' ? 'help-circle' : 'phone-call'} size={24} color={c.primary} />
+            </View>
+            {solutionStep === 'ask' ? (
+              <>
+                <Text style={[styles.solutionTitle, { color: c.foreground }]}>
+                  ¿Consideras que el producto se repararía de esta manera?
+                </Text>
+                <Text style={[styles.solutionText, { color: c.mutedForeground }]}>
+                  Si la respuesta es sí, se genera y comparte el reporte DOCX con el diagnóstico completo.
+                  Si consideras que no, valida con el líder técnico asignado por la marca: el documento se
+                  marcará como caso validado con el líder técnico antes de compartirlo.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleSolved}
+                  activeOpacity={0.75}
+                  style={[styles.solutionBtn, { backgroundColor: c.primary, borderRadius: colors.radius }]}
+                >
+                  <Feather name="check-circle" size={17} color={c.primaryForeground} />
+                  <Text style={[styles.solutionBtnText, { color: c.primaryForeground }]}>
+                    Sí, se repararía así · compartir reporte
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleNotSolved}
+                  activeOpacity={0.75}
+                  style={[styles.solutionBtn, { backgroundColor: c.card, borderWidth: 1.5, borderColor: c.border, borderRadius: colors.radius }]}
+                >
+                  <Feather name="phone-call" size={17} color={c.primary} />
+                  <Text style={[styles.solutionBtnText, { color: c.primary }]}>
+                    No, validar con mi líder técnico
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={closeSolution} style={styles.solutionCancel}>
+                  <Text style={[styles.solutionCancelText, { color: c.mutedForeground }]}>Cancelar</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.solutionTitle, { color: c.foreground }]}>
+                  Valida con el líder técnico asignado por la marca
+                </Text>
+                <Text style={[styles.solutionText, { color: c.mutedForeground }]}>
+                  Comunícate con el técnico líder asignado por la marca para validar el siguiente paso.
+                  El reporte ya quedó marcado como caso validado con el líder técnico.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleSolved}
+                  activeOpacity={0.75}
+                  style={[styles.solutionBtn, { backgroundColor: c.primary, borderRadius: colors.radius }]}
+                >
+                  <Feather name="share-2" size={17} color={c.primaryForeground} />
+                  <Text style={[styles.solutionBtnText, { color: c.primaryForeground }]}>
+                    Compartir reporte DOCX
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={closeSolution}
+                  activeOpacity={0.75}
+                  style={[styles.solutionBtn, { backgroundColor: c.card, borderWidth: 1.5, borderColor: c.border, borderRadius: colors.radius }]}
+                >
+                  <Feather name="check" size={17} color={c.primary} />
+                  <Text style={[styles.solutionBtnText, { color: c.primary }]}>Entendido</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -386,5 +493,57 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),
+  },
+  solutionBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  solutionPanel: {
+    padding: 20,
+    gap: 12,
+  },
+  solutionIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  solutionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+  },
+  solutionText: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  },
+  solutionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+  },
+  solutionBtnText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),
+  },
+  solutionCancel: {
+    alignItems: 'center',
+    padding: 6,
+  },
+  solutionCancelText: {
+    fontSize: 13,
+    textDecorationLine: 'underline',
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
   },
 });

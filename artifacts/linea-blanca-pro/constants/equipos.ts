@@ -8,8 +8,8 @@ export const EQUIPOS = [
   { id: 'lavadora', label: 'Lavadora / Digital y Semi', icon: 'refresh-cw', color: '#0891B2' },
   { id: 'secadora', label: 'Lavadora / Secadora', icon: 'wind', color: '#0284C7' },
   { id: 'aire', label: 'Aire Acondicionado', icon: 'wind', color: '#047857' },
-  { id: 'vitrina', label: 'Vitrina Refrigerante', icon: 'tool', color: '#64748B' },
-  { id: 'dispensadores', label: 'Dispensador de agua', icon: 'tool', color: '#001e49' },
+  { id: 'vitrina', label: 'Vitrina Refrigerante', icon: 'text-box-outline', color: '#64748B', family: 'material' },
+  { id: 'dispensadores', label: 'Dispensador de agua', icon: 'cup-water', color: '#001e49', family: 'material' },
   { id: 'otro', label: 'Otro producto que utiliza refrigeracion', icon: 'tool', color: '#787a05' },
 ] as unknown as EquipoTipoInfo[];
 

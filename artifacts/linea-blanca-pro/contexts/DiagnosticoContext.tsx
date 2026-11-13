@@ -38,6 +38,7 @@ interface DiagnosticoContextType {
   completeSession: () => DiagnosticSession | null;
   discardSession: () => void;
   deleteSession: (id: string) => void;
+  markLiderValidado: (id: string) => void;
   getSession: (id: string) => DiagnosticSession | undefined;
   saveDraft: () => void;
   loadDraft: () => DiagnosticSession | null;
@@ -299,6 +300,17 @@ const setEquipo = useCallback((equipo: EquipoInfo) => {
     return sessions.find((s) => s.id === id);
   }, [sessions]);
 
+  // Marca la sesión como validada con el líder técnico de la marca: el dato
+  // viaja al DOCX compartido y a la lista de reportes guardados.
+  const markLiderValidado = useCallback((id: string) => {
+    setSessions((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, liderValidado: true } : s));
+      persistSessions(updated);
+      return updated;
+    });
+    setCurrentSession((prev) => (prev && prev.id === id ? { ...prev, liderValidado: true } : prev));
+  }, [persistSessions]);
+
   // ── Borrador ──────────────────────────────────────────────────────────────
   const saveDraft = useCallback(() => {
     if (!currentSession) return;
@@ -347,6 +359,7 @@ const setEquipo = useCallback((equipo: EquipoInfo) => {
         completeSession,
         discardSession,
         deleteSession,
+        markLiderValidado,
         getSession,
         saveDraft,
         loadDraft,

@@ -78,6 +78,10 @@ export function buildReportText(session: DiagnosticSession): string {
       lines.push(session.result.recommendation);
       lines.push('');
     }
+    if (session.liderValidado) {
+      lines.push('CASO VALIDADO CON EL TÉCNICO LÍDER ASIGNADO POR LA MARCA: Sí');
+      lines.push('');
+    }
     if (session.result?.parts && session.result.parts.length > 0) {
       lines.push('REPUESTOS POSIBLES:');
       session.result.parts.forEach((p) => {
@@ -349,6 +353,21 @@ async function buildDocx(session: DiagnosticSession): Promise<Document> {
   children.push(field('Repuestos solicitados', session.conclusion.repuestos));
   children.push(field('Tiempo estimado de reparación', session.conclusion.tiempoEstimado));
   children.push(field('Observaciones', session.conclusion.observaciones));
+  // Caso escalado: se deja constancia en el documento antes de compartirlo.
+  if (session.liderValidado) {
+    children.push(
+      new Paragraph({
+        spacing: { before: 120, after: 80 },
+        children: [
+          new TextRun({
+            text: 'Caso validado con el técnico líder asignado por la marca: Sí',
+            bold: true,
+            color: REPORT_BLUE,
+          }),
+        ],
+      }),
+    );
+  }
 
   // Códigos IRIS: los seleccionados + los de los repuestos sugeridos por el árbol
   const codigosIris: string[] = [...(session.conclusion.codigosIris ?? [])];
@@ -474,9 +493,30 @@ async function buildDocx(session: DiagnosticSession): Promise<Document> {
   });
 }
 
+// Nombre del archivo: cliente · modelo · fecha y hora de finalización, sin
+// guiones ni espacios, con la hora en formato militar (AAAAMMDD_HHMM), porque
+// Android o iOS rechazan varios caracteres en el nombre del documento.
+function sanitizeFilePart(value: string | undefined): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+export function buildReportFileName(session: DiagnosticSession): string {
+  const cliente = sanitizeFilePart(session.cliente.nombre) || 'Cliente';
+  const modelo = sanitizeFilePart(session.equipo.modelo) || sanitizeFilePart(session.equipo.marca) || 'Sin-modelo';
+  const fecha = new Date(session.finishedAt ?? session.startedAt);
+  const fechaTexto = `${fecha.getFullYear()}${String(fecha.getMonth() + 1).padStart(2, '0')}${String(fecha.getDate()).padStart(2, '0')}`;
+  const horaTexto = `${String(fecha.getHours()).padStart(2, '0')}${String(fecha.getMinutes()).padStart(2, '0')}`;
+  return `Reporte_${cliente}_${modelo}_${fechaTexto}_${horaTexto}.docx`;
+}
+
 export async function shareReport(session: DiagnosticSession): Promise<void> {
   const document = await buildDocx(session);
-  const fileName = `reporte_diagnostico_${session.id}.docx`;
+  const fileName = buildReportFileName(session);
 
   if (Platform.OS === 'web') {
     const blob = await Packer.toBlob(document);

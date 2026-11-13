@@ -46,7 +46,7 @@ export const NOENFRIA_AIRE: DiagnosticTree = {
     detail: 'La mayoría de los aires acondicionados modernos son inverter. Los compresores Inverter no usan capacitor de arranque ni relé: los alimenta un módulo driver (tarjeta inverter).',
     tip: 'Indicios de Inverter: módulo electrónico grande en la unidad exterior, sin capacitor de compresor visible y frecuencia variable audible al operar.',
     options: [
-      { label: 'Sí, es tecnología Inverter', nextId: 'inv_start', color: 'neutral' },
+      { label: 'Sí, es tecnología Inverter', nextId: 'medir_senal', color: 'neutral' },
       { label: 'No, es compresor convencional (on/off)', nextId: 'presion_baja_aire', color: 'success' },
     ],
   },
@@ -664,22 +664,91 @@ const AIRE_PRESION_REFRI: DiagnosticTree = {
     id: 'presion_causa', type: 'question',
     text: '¿Qué condición observas al medir?',
     options: [
-      { label: 'Presiones bajas / falta refrigerante o fuga', nextId: 'presion_result_causa', color: 'danger' },
-      { label: 'Presiones altas / condensador sucio o sobrecarga', nextId: 'presion_result_causa', color: 'danger' },
+      { label: 'Presiones bajas / falta refrigerante o fuga', nextId: 'presion_baja_verif', color: 'danger' },
+      { label: 'Presiones altas / condensador sucio o sobrecarga', nextId: 'presion_alta_verif', color: 'danger' },
     ],
   },
-  presion_result_causa: {
-    id: 'presion_result_causa', type: 'result',
-    text: 'Presión del sistema fuera de rango',
+  presion_baja_verif: {
+    id: 'presion_baja_verif', type: 'measure',
+    text: 'Buscar la fuga y medir el sobrecalentamiento',
+    detail: 'Con el equipo estable, mide el sobrecalentamiento (temperatura de succión menos temperatura de saturación) y busca la fuga con detector electrónico o agua jabonosa en uniones y roscas. Confirma que las válvulas de servicio estén completamente abiertas.',
+    tip: 'Sobrecalentamiento muy alto con presión baja confirma falta de refrigerante; si hay aceite en las uniones, la fuga está cerca.',
+    evidenceLabel: 'Foto del sobrecalentamiento y de la detección de fuga',
+    nextId: 'presion_baja_ok',
+  },
+  presion_baja_ok: {
+    id: 'presion_baja_ok', type: 'question',
+    text: '¿Se encontró fuga o el sobrecalentamiento confirma falta de refrigerante?',
+    options: [
+      { label: 'Sí, hay fuga o falta de carga', nextId: 'presion_result_fuga', color: 'danger' },
+      { label: 'No, no se encuentra fuga y la carga es correcta', nextId: 'presion_result_expansion', color: 'neutral' },
+    ],
+  },
+  presion_alta_verif: {
+    id: 'presion_alta_verif', type: 'measure',
+    text: 'Limpiar el condensador y medir amperaje y ΔT del aire',
+    detail: 'Limpia el condensador y verifica el flujo de aire (ventilador y filtros). Mide el amperaje del compresor contra la placa y el ΔT entre aire de retorno y de impulsión; un ΔT bajo con presión alta indica obstrucción o sobrecarga.',
+    evidenceLabel: 'Foto del condensador limpio, amperaje y ΔT',
+    nextId: 'presion_alta_ok',
+  },
+  presion_alta_ok: {
+    id: 'presion_alta_ok', type: 'question',
+    text: '¿El amperaje supera el de placa con el condensador limpio?',
+    options: [
+      { label: 'Sí, sobrecarga de refrigerante', nextId: 'presion_result_sobrecarga', color: 'danger' },
+      { label: 'No, el amperaje está en rango', nextId: 'presion_result_flujo', color: 'neutral' },
+    ],
+  },
+  presion_result_fuga: {
+    id: 'presion_result_fuga', type: 'result',
+    text: 'Fuga de refrigerante confirmada',
     result: {
       causes: [
-        { cause: 'Falta de refrigerante por fuga', probability: 45 },
-        { cause: 'Exceso de refrigerante por carga excesiva', probability: 15 },
-        { cause: 'Condensador sucio u obstruido', probability: 20 },
-        { cause: 'Flujo de aire insuficiente (ventilador o filtros)', probability: 20 },
+        { cause: 'Fuga en unión, rosca o soldadura', probability: 55 },
+        { cause: 'Fuga en el evaporador o condensador por corrosión', probability: 30 },
+        { cause: 'Válvula de servicio con empaque deteriorado', probability: 15 },
       ],
-      recommendation: 'Corregir la causa: reparar fuga, hacer vacío y ajustar carga por peso, o limpiar el condensador y corregir el flujo de aire. Confirmar con presiones y amperaje normales antes de liberar el equipo.',
+      recommendation: 'Reparar la fuga, hacer vacío con bomba y cargar por peso según la placa. Confirmar presión y sobrecalentamiento normales antes de liberar el equipo y documentar la prueba de estanqueidad.',
       parts: ['Carga de refrigerante', 'Filtro secante', 'Servicio de detección de fugas'],
+    },
+  },
+  presion_result_expansion: {
+    id: 'presion_result_expansion', type: 'result',
+    text: 'Presión baja sin fuga — restricción en la expansión',
+    result: {
+      causes: [
+        { cause: 'Capilar o válvula de expansión restringida', probability: 50 },
+        { cause: 'Filtro secante saturado o tapado', probability: 30 },
+        { cause: 'Sensor de presión con lectura falsa', probability: 20 },
+      ],
+      recommendation: 'Verificar la caída de temperatura a través del capilar o la válvula de expansión y el filtro secante. Si hay restricción, reemplazar el filtro y validar la lectura del sensor de presión.',
+      parts: ['Capilar / válvula de expansión', 'Filtro secante', 'Sensor de presión'],
+    },
+  },
+  presion_result_sobrecarga: {
+    id: 'presion_result_sobrecarga', type: 'result',
+    text: 'Sobrecarga de refrigerante',
+    result: {
+      causes: [
+        { cause: 'Carga de refrigerante por encima de la especificada', probability: 65 },
+        { cause: 'Aire o humedad en el circuito (carga sin vacío)', probability: 20 },
+        { cause: 'Condensador con flujo de aire insuficiente', probability: 15 },
+      ],
+      recommendation: 'Recuperar el refrigerante, hacer vacío y cargar por peso. Verificar el flujo de aire del condensador y el estado del filtro antes de liberar el equipo.',
+      parts: ['Carga de refrigerante', 'Filtro secante'],
+    },
+  },
+  presion_result_flujo: {
+    id: 'presion_result_flujo', type: 'result',
+    text: 'Presión alta por flujo de aire insuficiente',
+    result: {
+      causes: [
+        { cause: 'Condensador sucio u obstruido', probability: 50 },
+        { cause: 'Ventilador del condensador lento o con aspas dañadas', probability: 30 },
+        { cause: 'Recinto con recirculación de aire caliente', probability: 20 },
+      ],
+      recommendation: 'Lavar el condensador, verificar el ventilador y su capacitor, y asegurar la distancia mínima de instalación para evitar recirculación. Confirmar presión normal antes de cerrar el caso.',
+      parts: ['Condensador', 'Motor ventilador', 'Capacitor'],
     },
   },
   presion_sensor: {
@@ -772,7 +841,7 @@ const AIRE_INVERTER_PROTECCIONES: DiagnosticTree = {
   start: {
     id: 'start', type: 'measure',
     text: 'Medir el voltaje en la salida de la tarjeta inverter (U, V, W)',
-    detail: 'Con el equipo en intento de arranque, mide el voltaje entre las fases U-V, U-W y V-W en la salida del módulo hacia el compresor. En arranque se esperan más de 80 V y en operación estable el valor de la placa (60–230 V según fabricante). 0 V entre fases apunta a tarjeta sin salida.',
+    detail: 'Con el equipo en intento de arranque, mide el voltaje entre las fases U-V, U-W y V-W en la salida del módulo hacia el compresor. El rango esperado parte de 40 V y en operación estable debe mantenerse en el valor de la placa (40–230 V según fabricante). 0 V entre fases apunta a tarjeta sin salida.',
     gifUri: 'medir-senal-inverter',
     nextId: 'inv_compresor',
   },

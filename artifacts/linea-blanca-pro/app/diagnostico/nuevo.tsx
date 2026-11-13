@@ -9,6 +9,7 @@ import { useDiagnostico } from '@/contexts/DiagnosticoContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { FormField } from '@/components/FormField';
 import { StepProgress } from '@/components/StepProgress';
+import { EquipoIcon } from '@/components/EquipoIcon';
 import { EQUIPOS } from '@/constants/equipos';
 import type { EquipoTipo } from '@/types/diagnostico';
 import colors from '@/constants/colors';
@@ -24,6 +25,7 @@ export default function NuevoScreen() {
   const [ciudad, setCiudad] = useState('');
   const [tecnicoLocal, setTecnicoLocal] = useState(tecnico);
   const [equipo, setEquipoLocal] = useState<EquipoTipo>('nevera');
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     // Cada entrada a “Nuevo diagnóstico” debe comenzar con un ID y evidencias
@@ -33,10 +35,18 @@ export default function NuevoScreen() {
   }, []);
 
   const handleContinue = () => {
-    if (!nombre.trim()) {
-      Alert.alert('Campo requerido', 'Ingresa el nombre del cliente');
+    // Campos obligatorios: se listan todos los vacíos en un solo aviso para que
+    // el técnico sepa qué diligenciar antes de continuar. En web Alert.alert no
+    // muestra nada, así que el aviso también se pinta dentro del formulario.
+    const faltantes: string[] = [];
+    if (!nombre.trim()) faltantes.push('Nombre del cliente');
+    if (faltantes.length > 0) {
+      const mensaje = `Hay campos obligatorios sin diligenciar: ${faltantes.join(', ')}. Completa los campos marcados con * para continuar.`;
+      setFormError(mensaje);
+      if (Platform.OS !== 'web') Alert.alert('Campos obligatorios', mensaje);
       return;
     }
+    setFormError('');
     setTecnico(tecnicoLocal);
     updateCliente({ nombre, telefono, ciudad });
     setEquipo({
@@ -63,7 +73,16 @@ export default function NuevoScreen() {
 
       <Text style={[styles.sectionTitle, { color: c.foreground }]}>Datos del cliente</Text>
 
-      <FormField label="Nombre del cliente" value={nombre} onChangeText={setNombre} placeholder="Nombre completo" required />
+      <FormField
+        label="Nombre del cliente"
+        value={nombre}
+        onChangeText={(texto) => {
+          setNombre(texto);
+          if (formError) setFormError('');
+        }}
+        placeholder="Nombre completo"
+        required
+      />
       <FormField label="Teléfono" value={telefono} onChangeText={setTelefono} placeholder="+57 300 000 0000" keyboardType="phone-pad" />
       <FormField label="Ciudad" value={ciudad} onChangeText={setCiudad} placeholder="Medellín, Bogotá..." />
       <FormField label="Técnico responsable" value={tecnicoLocal} onChangeText={setTecnicoLocal} placeholder="Tu nombre" />
@@ -86,7 +105,7 @@ export default function NuevoScreen() {
                 },
               ]}
             >
-              <Feather name={e.icon as keyof typeof Feather.glyphMap} size={22} color={selected ? e.color : c.mutedForeground} />
+              <EquipoIcon tipo={e.id} size={22} color={selected ? e.color : c.mutedForeground} />
               <Text style={[styles.equipoLabel, { color: selected ? e.color : c.foreground }]} numberOfLines={2}>
                 {e.label}
               </Text>
@@ -94,6 +113,13 @@ export default function NuevoScreen() {
           );
         })}
       </View>
+
+      {formError ? (
+        <View style={[styles.errorBox, { backgroundColor: c.card, borderColor: c.destructive, borderRadius: colors.radius }]}>
+          <Feather name="alert-circle" size={16} color={c.destructive} />
+          <Text style={[styles.errorText, { color: c.destructive }]}>{formError}</Text>
+        </View>
+      ) : null}
 
       <PrimaryButton label="Continuar a falla" icon="arrow-right" onPress={handleContinue} />
     </KeyboardAwareScrollViewCompat>
@@ -125,5 +151,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     fontFamily: Platform.select({ ios: 'System', default: 'Inter_600SemiBold' }),
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 12,
+    borderWidth: 1.5,
+    marginBottom: 14,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: Platform.select({ ios: 'System', default: 'Inter_500Medium' }),
   },
 });
